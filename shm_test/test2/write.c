@@ -24,6 +24,8 @@ int main()
     shm_id = shmget(key, 4096, IPC_CREAT | 0644);
     assert(shm_id != -1);
 
+    printf("shmid ===== %d\n", shm_id);
+
     p_map = (people *)shmat(shm_id, NULL, 0);
     temp = 'a';
 
@@ -36,16 +38,16 @@ int main()
     // int* tmp = (int *)shmat(shm_id, NULL, 0);
     // *tmp = 100;
 
-    int shmId = shmget(4567, 4096, IPC_CREAT | 0644);
-    assert(shmId != -1);
+    // int shmId = shmget(4567, 4096, IPC_CREAT | 0644);
+    // assert(shmId != -1);
 
-    int* intP = (int *)shmat(shmId, NULL, 0);
-    *intP = 10;
+    // int* intP = (int *)shmat(shmId, NULL, 0);
+    // *intP = 10;
 
-    if (shmdt(intP) == -1) 
-    {
+    // if (shmdt(intP) == -1) 
+    // {
 
-    }
+    // }
     if (shmdt(p_map) == -1) 
     {
 

@@ -35,14 +35,14 @@ main(int argc, char **argv)
 
     // int a;
     // printf("%d\n", a);
-    int id = shmget(4567, 4096, IPC_CREAT);
-    int* p = (int *)shmat(id, NULL, 0);
-    printf("here is int : %d\n", *p);
+    // int id = shmget(4567, 4096, IPC_CREAT);
+    // int* p = (int *)shmat(id, NULL, 0);
+    // printf("here is int : %d\n", *p);
 
-    if (shmdt(id) == -1) 
-    {
+    // if (shmdt(id) == -1) 
+    // {
 
-    }
+    // }
     if (shmdt(p_map) == -1)
         perror(" detach error ");
 }
