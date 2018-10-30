@@ -1,4 +1,4 @@
-#include <stdlib.h>
+#include <cstdlib>
 #include <unistd.h>
 #include <sys/sem.h>
 #include <sys/types.h>
@@ -14,7 +14,7 @@ MyBus::MyBus()
 
 MyBus::~MyBus() 
 {
-
+    
 }
 
 char* MyBus::getPath(char* buffer, size_t size) //获取当前工作目录
@@ -48,4 +48,16 @@ key_t MyBus::getKey(int proj_id)
         exit(1);
     }
     return keyTmp;
+}
+
+int MyBus::createSharem(key_t key, int size, int flag) 
+{
+    flag = flag | 0666;
+    int shm_id = shm_Manage.shmGet(key, size, flag);
+
+}
+
+int MyBus::getSharem(key_t key, int size, int flag) 
+{
+    int shm_id = shm_Manage.shmGet(key, size, flag);
 }
