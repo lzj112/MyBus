@@ -14,9 +14,8 @@ public:
     ~ShmManage();
     int shmGet(key_t key, size_t size, int flag);
     void* shmAt(int shmid, const void* addr, int flag);
-    int shmDt(void* addr);
+    int shmDt(const void* addr);
     int shmCtl(int shmid, int cmd, struct shmid_ds* buf);
-    int myErrno(int err);
 private:
     // bool isclosed;  //程序结束时调用shmdt
     // int shm_Count; //引用计数,降至0时真正删除释放共享内存
