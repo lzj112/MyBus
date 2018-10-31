@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <unistd.h>
+#include <cstring>
 #include <sys/sem.h>
 #include <sys/shm.h>
 #include <sys/types.h>
@@ -35,16 +36,21 @@ char* MyBus::getPath(char* buffer, size_t size)
 }
 
 //ftok获得key
-key_t MyBus::getKey(int proj_id)
+key_t MyBus::getKey(int proj_id, char* in_case_path)
 {
     char buffer[50];
+    if (in_case_path != nullptr)    //防止万一给了文件目录
+    {
+        strcpy(buffer, in_case_path);
+    }
+
     char* path = getPath(buffer, (size_t)50);
     if (path == nullptr) 
     {
         perror("path is nullptr : ");
         exit(1);
     }
-    key_t keyTmp = ftok(buffer, proj_id);
+    key_t keyTmp = ftok(buffer, proj_id);   //获得key
     if (keyTmp == -1) 
     {
         perror("ftok failed : ");
