@@ -5,7 +5,8 @@
 共享内存管理
 */
 #include <sys/types.h>
-#include "ShareMry.h"
+
+#include "BusInfo.h"
 
 class ShmManage
 {

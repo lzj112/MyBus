@@ -1,13 +1,10 @@
-/*
-这个程序呢没有删除共享内存段,导致我写其他例子的时候,不能创建id为1234的共享内存段
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
-       
+
 typedef struct Stu 
 {
     int age;
@@ -16,27 +13,28 @@ typedef struct Stu
 
 int main() 
 {
-    Stu s;
-    strcpy(s.name, "lvbai");
-
-    //创建共享内存段
-    int id = shmget(1234, 8, IPC_CREAT | 0644);
-    /*
-    IPC_CREAT定义的一个特殊比特位，同时必须和权限标志按位或才能创建一个新的共享内存段。
-    */
+    int id = shmget((key_t)1234, sizeof(Stu) * 10, IPC_CREAT | 0666);
     if (id == -1) 
     {
-        perror("shmget"), exit(1);
+        perror("shmget "), exit(1);
     }
-    //挂载到进程的地址空间
-    Stu* p = (Stu *)shmat(id, NULL, 0);
+    // Stu tmp[10];
+    // char tmp[15] = "here is shm";
+    Stu* t = (Stu *)shmat(id, NULL, 0);
+    for (int i = 0; i < 5; i++) 
+    {
+        (t + i)->age = i;
+        strcpy((t + i)->name, "lvbai");
+    }
 
-    int i = 0;
-    // while (1) 
-    // {
-        s.age = ++i;
-        memcpy(p, &s, sizeof(Stu)); //写到共享共享段中
-        // sleep(2);
-    // }
+    // strcpy(t, tmp);
+
+    shmdt(t);
+
+    // shmctl(id, IPC_RMID, 0);
+   
+   key_t key = ftok("/home/lzj/MyBus", 2);
+   printf("%d************\n", (key >> 16 )  /*+1*/);
+    
     return 0;
 }

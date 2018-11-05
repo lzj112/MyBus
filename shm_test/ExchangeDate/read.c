@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -12,18 +13,35 @@ typedef struct Stu
 
 int main() 
 {
-    int id = shmget(1234, 8, 0);
+    int id = shmget((key_t)1234, 0, IPC_CREAT);
     if (id == -1) 
     {
         perror("shmget "), exit(1);
     }
+// printf("read shmid ==== %d\n", id);
 
-    Stu* p = (Stu *)shmat(id, NULL, 0);
-   
-    while (1) 
+    void* p = NULL;
+    p = shmat(id, NULL, 0);
+    if (p == (void *)-1) 
     {
-        printf("age = %d, name = %s\n", p->age, p->name);
-        sleep(2);
+        perror("****** : ");
     }
+
+
+    Stu* ptr = (Stu *)p;
+
+printf("here is message : \n");
+
+    for (int i = 0; i < 10; i++) 
+    {
+        printf("age = %d, name = %s\n", (ptr + i)->age, (ptr + i)->name);
+    }
+
+    shmdt(p);
+
+    shmctl(id, IPC_RMID, 0);
+   
+   
+    
     return 0;
 }

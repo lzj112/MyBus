@@ -10,20 +10,11 @@ using namespace std;
 
 int main() 
 {
+
     MyBus station;
-    key_t key = station.getKey(1);
+    key_t key = station.getKey(10);
 
-    int shmid = station.createShareM(key, 1024);
-    assert(shmid != -1);
+    BusCard* cardPtr = station.initChannelControl(key);
 
-    char tmp[15] = "here is shm";
-    char* t = (char *)station.getShareAddr(shmid);
-    assert(t != nullptr);
-
-    strcpy(t, tmp);
-
-    int ret = station.ShareDt(t);
-    assert(ret != -1);
-
-    // ret = station.ShareCtl(shmid);  在读取之前删除读不到了
+    void* 
 }
