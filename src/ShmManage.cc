@@ -19,10 +19,6 @@ ShmManage::~ShmManage()
 
 }
 
-// int ShmManage::myErrno(int err) 
-// {
-
-// }
 
 int ShmManage::shmGet(key_t key, size_t size, int flag) 
 {

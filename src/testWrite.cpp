@@ -14,7 +14,15 @@ int main()
     MyBus station;
     key_t key = station.getKey(10);
 
-    BusCard* cardPtr = station.initChannelControl(key);
+    BusCard* cardPtr = station.initChannelControl(key); //创建共享内存控制块及通信队列
 
-    void* 
+    //应该转换成package body类型把
+    void* write = station.getMessageQueue(cardPtr, 1);  //获取写队列的映射地址
+
+    // void* read = station.getMessageQueue(cardPtr, 0);   //获取读队列映射地址
+
+    const char* p = "hello, i`m lvbai";
+
+    int ret = station.sendToLocal(cardPtr, write, p);
+
 }

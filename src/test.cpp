@@ -4,13 +4,20 @@
 
 using namespace std;
 
+struct test 
+{
+    int a;
+    test() 
+    {
+        cout << "Asasa" << endl;
+    }
+    ~test() 
+    {
+        cout << "asqqqqqqqqqqq" << endl;
+    }
+};
 int main() 
 {
-    void* t;
-    int a = -1;
-    t = &a;
-    if (*(int *)t == -1) 
-    {
-        cout << "asasa" << endl;
-    }    
+    test* tmp = new test();
+    delete tmp;    
 }

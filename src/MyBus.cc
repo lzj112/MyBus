@@ -77,7 +77,7 @@ BusCard* MyBus::initChannelControl(key_t key)
     
     cardPtr->shmSelfId = shmid;
     cardPtr->ftokKey = key;
-    cardPtr->proQueuenNmber[2] = (int)getpid();
+    cardPtr->proQueuenNmber[0][2] = (int)getpid();
     
     //初始化两个读写队列
     initShmQueue(cardPtr);
@@ -85,20 +85,33 @@ BusCard* MyBus::initChannelControl(key_t key)
     return cardPtr;
 }
 
+// BusCard* MyBus::getChannel(int shmid) 
+// {
+
+// }
+
+
 int MyBus::initShmQueue(BusCard* card) 
 {
+    if (card == nullptr) 
+    {
+        return -1;
+    }
+    
+    memset(card->proQueuenNmber, 0, sizeof(card->proQueuenNmber));
+
     for (int i = 0; i < 2; i++) 
     {
-        int keyTmp = (card->ftokKey >> 16) + i;  
-        int key_1 = getKey(keyTmp);
+        int keyTmp = (card->ftokKey >> 16) + i;  //防止重复
+        int key_ = getKey(keyTmp);
     
         int shmid = shm_Manage.shmGet(keyTmp, sizeof(PacketBody) * queueSize, IPC_CREAT | 0666);
         if (shmid == -1) 
         {
            return -1;
         }
-        card->shmqueue_One = shmid;
-        card->proQueuenNmber[i] = shmid;
+        // card->shmqueue_One = shmid;
+        card->proQueuenNmber[0][i] = shmid; //存储两个队列的shmid
         
         shmid = 0;
         keyTmp = 0;
@@ -106,3 +119,93 @@ int MyBus::initShmQueue(BusCard* card)
     return 0;
 }
 
+void* MyBus::getMessageQueue(BusCard* cardPtr, int flag) //flag=0期望读队列,=1期望写队列
+{
+    if (cardPtr == nullptr || flag > 1 || flag < 0) 
+    {
+        return nullptr;
+    }
+
+    int shmid;
+    int pid = (int)getpid();
+    if (pid == cardPtr->proQueuenNmber[0][2]) //是创建队列的进程
+    {
+        shmid = cardPtr->proQueuenNmber[0][flag];
+    }
+    else 
+    {
+        //不是本机进程,队列相反
+        shmid = (flag == 0) ? cardPtr->proQueuenNmber[0][1] : cardPtr->proQueuenNmber[0][0];
+    }
+    
+    //将该队列挂载到当前进程
+    void* tmpPtr = nullptr;
+    tmpPtr = shm_Manage.shmAt(shmid, nullptr, 0);
+
+    return tmpPtr;
+}
+
+int MyBus::getQueueFront(BusCard* cardPtr, int flag) 
+{
+    if (cardPtr == nullptr || flag > 1 || flag < 0 ) 
+    {
+        return -1;
+    }
+    
+    int shmid;
+    int front;
+    int pid = (int)getpid();
+    if (pid == cardPtr->proQueuenNmber[0][2]) //是创建队列的进程
+    {
+        front = cardPtr->proQueuenNmber[1][flag];
+    }
+    else 
+    {
+        //不是本机进程,队列相反
+        front = (flag == 0) ? cardPtr->proQueuenNmber[1][1] : cardPtr->proQueuenNmber[1][0];
+    }
+}
+
+int MyBus::getQueueRear(BusCard* cardPtr, int flag) 
+{
+    if (cardPtr == nullptr || flag > 1 || flag < 0 ) 
+    {
+        return -1;
+    }
+    int shmid;
+    int rear;
+    int pid = (int)getpid();
+    if (pid == cardPtr->proQueuenNmber[0][2]) //是创建队列的进程
+    {
+        rear = cardPtr->proQueuenNmber[2][flag];
+    }
+    else 
+    {
+        //不是本机进程,队列相反
+        rear = (flag == 0) ? cardPtr->proQueuenNmber[2][1] : cardPtr->proQueuenNmber[2][0];
+    }
+    return rear;
+}
+
+int MyBus::sendToLocal(BusCard* cardPtr, void* shmMapAddr, const char* buffer) 
+{
+    if (cardPtr == nullptr) 
+    {
+        return -1;
+    }
+    void* write = nullptr;
+    write = getMessageQueue(cardPtr, 1);
+    if (write == nullptr) 
+    {
+        return -1;
+    }
+
+    int queueFront = getQueueFront(cardPtr, 1);
+    int queueRear = getQueueRear(cardPtr, 1);
+    if ((queueRear + 1) % queueSize == queueFront) //队列满,队尾和队头间有一个空元素
+    {
+        return -1;
+    }
+
+    strcpy()
+}
