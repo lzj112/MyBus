@@ -15,17 +15,16 @@
     */
 struct BusCard
 {
-    int shmSelfId;    //本身这块共享内存的id
-    // int shmqueue_One; //两条收发队列的共享内存id
-    // int shmqueue_Two;
     key_t ftokKey;   //ftok的key
-
+    int shmSelfId;    //本身这块共享内存的id
     int proQueuenNmber[3][3];
+
 };
 
 /*
 进程间通信的结构
 */
+const int PacketBodyBufferSize = 256;
 struct PacketHead  
 {
     size_t bodySzie;

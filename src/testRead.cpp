@@ -1,5 +1,7 @@
 #include <assert.h>
+#include <unistd.h>
 #include <sys/types.h>
+
 
 #include <iostream>
 
@@ -10,18 +12,14 @@ using namespace std;
 int main() 
 {
     MyBus station;
-    key_t key = station.getKey(1);
+    int shmid = 10125323;
+    BusCard* cardPtr = station.getChannelControl(shmid);
 
-    int shmid = station.createShareM(key, 1024);
-    assert(shmid != -1);
+    void* ptr = station.getMessageQueue(cardPtr, 0);
 
-    char* tmp = (char *)station.getShareAddr(shmid);
-    assert(tmp != nullptr);
+    char p[256];
+    station.recvFromLocal(cardPtr, ptr, p, 256);
 
-    cout << "here is from shm`s message : " << tmp << endl;
+    cout << "here is message from local:\n [" << p << "]" << endl;
     
-    int ret = station.ShareDt(tmp);
-    assert(ret != -1);
-
-    ret = station.ShareCtl(shmid);
 }

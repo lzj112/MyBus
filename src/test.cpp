@@ -1,23 +1,15 @@
+#include <cstring>
 #include <sys/sem.h>
 
 #include <iostream>
 
 using namespace std;
-
-struct test 
-{
-    int a;
-    test() 
-    {
-        cout << "Asasa" << endl;
-    }
-    ~test() 
-    {
-        cout << "asqqqqqqqqqqq" << endl;
-    }
-};
 int main() 
 {
-    test* tmp = new test();
-    delete tmp;    
+    int tmp = 0;
+    {
+        int tmp;
+        tmp = 10;
+    }
+    cout << tmp << endl;
 }
