@@ -15,7 +15,7 @@ class NetComm
 public:
     NetComm() : listHead_ID(-1), headAddr(nullptr){}
     int initShmListHead();                              //初始化链表头结点
-    int updateList(int listHead, ProComm* infTmp);      //有新的连接,更新链表节点
+    int updateList(int listHead, ProComm* infoTmp);     //有新的连接,更新链表节点
     int delListNode(int fd);                            //哪个sockfd被关闭了就删除该节点
     int isThereFd(ProComm* infoTmp);                    //查看是否有连接存在
 

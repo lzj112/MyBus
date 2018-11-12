@@ -35,4 +35,11 @@ int NetComm::initShmListHead()
         }
         headAddr = tmp;
     }
+
+    return 0;
+}
+
+int NetComm::updateList(int listHead, ProComm* infoTmp) 
+{
+    
 }
