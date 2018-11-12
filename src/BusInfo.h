@@ -12,7 +12,7 @@
     proQueueNumber[0][0]存储读取队列id,[0][1]存储发送队列id,[0][2]存储当前进程id
     通信对端进程发现存储的进程id不是本进程id,那么对应的读写队列就是它的写读队列
     proQueueNumber[1][0],[1][1],[2][0],[2][1]存储两个队列的头尾指针
-    */
+*/
 struct BusCard
 {
     key_t ftokKey;   //ftok的key
@@ -21,9 +21,8 @@ struct BusCard
 
 };
 
-/*
-进程间通信的结构
-*/
+
+//进程间通信的结构
 const int PacketBodyBufferSize = 256;
 struct PacketHead  
 {
@@ -36,12 +35,24 @@ struct PacketBody
     char buffer[256];
 };
 
-struct ProComm //进程间通信需要的地址
+//进程间通信需要的地址
+struct ProComm 
 {
     char* source_IP;
     int source_PORT;
     char* dest_IP;
     int dest_PORT;
+};
+
+//路由表
+struct RoutingTable 
+{
+    char sourceIp[20];
+    char destIp[20];
+    int sourcePort;
+    int destPort;
+    int sockfd;
+    int shmid;
 };
 
 #endif

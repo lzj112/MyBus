@@ -60,7 +60,7 @@ key_t MyBus::getKey(int proj_id, char *in_case_path)
 BusCard* MyBus::initChannelControl(key_t key) 
 {
     //开辟存储控制块的共享内存
-    int shmid = shm_Manage.shmGet(key, sizeof(BusCard), IPC_CREAT | 0666);
+    int shmid = ShmManage::shmGet(key, sizeof(BusCard), IPC_CREAT | 0666);
     if (shmid == -1) 
     {
         return nullptr;
@@ -71,14 +71,15 @@ BusCard* MyBus::initChannelControl(key_t key)
     }
 
     //挂载到当前进程
-    void* ptrTmp = shm_Manage.shmAt(shmid, nullptr, 0);
+    void* ptrTmp = ShmManage::shmAt(shmid, nullptr, 0);
     if (*(int *)ptrTmp == -1) 
     {
         return nullptr;
     }
 
     BusCard* cardPtr = (BusCard *)ptrTmp;
-    memset(cardPtr->proQueuenNmber, 0, sizeof(cardPtr->proQueuenNmber));
+    // memset(cardPtr->proQueuenNmber, 0, sizeof(cardPtr->proQueuenNmber)); 
+    //shmget创建的字段会自动全部被初始化0
 
     cardPtr->shmSelfId = shmid;
     cardPtr->ftokKey = key;
@@ -93,7 +94,7 @@ BusCard* MyBus::initChannelControl(key_t key)
 BusCard* MyBus::getChannelControl(int shmid) 
 {
     //挂载到当前进程
-    void* ptrTmp = shm_Manage.shmAt(shmid, nullptr, 0);
+    void* ptrTmp = ShmManage::shmAt(shmid, nullptr, 0);
     if (*(int *)ptrTmp == -1) 
     {
         return nullptr;
@@ -117,12 +118,11 @@ int MyBus::initShmQueue(BusCard* card)
         int keyTmp = (card->ftokKey >> 16) + i;  //防止重复
         int key_ = getKey(keyTmp);
     
-        int shmid = shm_Manage.shmGet(keyTmp, sizeof(PacketBody) * queueSize, IPC_CREAT | 0666);
+        int shmid = ShmManage::shmGet(keyTmp, sizeof(PacketBody) * queueSize, IPC_CREAT | 0666);
         if (shmid == -1) 
         {
            return -1;
         }
-        // card->shmqueue_One = shmid;
         card->proQueuenNmber[0][i] = shmid; //存储两个队列的shmid
         
         shmid = 0;
@@ -152,7 +152,7 @@ void* MyBus::getMessageQueue(BusCard* cardPtr, int flag) //flag=0期望读队列
     
     //将该队列挂载到当前进程
     void* tmpPtr = nullptr;
-    tmpPtr = shm_Manage.shmAt(shmid, nullptr, 0);
+    tmpPtr = ShmManage::shmAt(shmid, nullptr, 0);
 
     return tmpPtr;
 }

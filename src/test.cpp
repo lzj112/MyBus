@@ -1,15 +1,38 @@
-#include <cstring>
-#include <sys/sem.h>
-
 #include <iostream>
+#include <string>
 
-using namespace std;
+class APP 
+{
+public:
+    APP(const std::string &ffff) 
+    {
+        std::cout << "APP(): " << ffff << std::endl;
+        // std::cout << "here is APP() \n";
+    }
+
+    APP(int i)
+    {
+        std::cout << "APP(): " << i << std::endl;
+    }
+
+    void run() 
+    {
+        std::cout << "???" << std::endl;
+    }
+};
+
 int main() 
 {
-    int tmp = 0;
-    {
-        int tmp;
-        tmp = 10;
-    }
-    cout << tmp << endl;
+    static_cast<APP>("Lv").run();
+    APP("ZiJian").run();
+    ((APP)222222).run();
 }
+
+
+/*
+...
+static_cast
+类型转换的实质:
+调用了这个类型的单参构造函数
+
+*/

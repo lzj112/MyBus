@@ -8,9 +8,10 @@
 #include <mutex>
 
 #include "BusInfo.h"
+#include "NetComm.h"
 #include "ShmManage.h"
 
-/*
+/* 
 进程间通信组件
 */
 class MyBus
@@ -18,7 +19,7 @@ class MyBus
   public:
     MyBus();
     ~MyBus();
-    char* getPath(char *buffer, size_t size);                //使用ftok创建key
+    
     key_t getKey(int proj_id, char* in_case_path = nullptr); //获得shmget的key
     BusCard* initChannelControl(key_t key);                  //初始化控制块信息,以及两个队列
     BusCard* getChannelControl(int shmid);                          //获得一个创建好的控制块信息
@@ -33,13 +34,15 @@ class MyBus
     int sendByNetwork();
     int recvFromNetwork();
 
+  private:
+    char* getPath(char *buffer, size_t size);                //使用ftok创建key
     int getQueueFront(BusCard* cardPtr, int flag);           //队列操作
     int getQueueRear(BusCard* cardPtr, int flag);
 
-  private:
-    ShmManage shm_Manage; //封装对共享内存的操作
     const int queueSize = 256;
     std::mutex my_lock;
+    
+    NetComm plane;        //封装网络通信的细节
 };
 
 #endif

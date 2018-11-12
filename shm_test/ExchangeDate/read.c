@@ -13,12 +13,13 @@ typedef struct Stu
 
 int main() 
 {
-    int id = shmget((key_t)1234, 0, IPC_CREAT);
+    int id = shmget((key_t)1234, sizeof(Stu) * 10, IPC_CREAT | 0644);
     if (id == -1) 
     {
         perror("shmget "), exit(1);
     }
-// printf("read shmid ==== %d\n", id);
+    printf("%d\n", id);
+
 
     void* p = NULL;
     p = shmat(id, NULL, 0);
@@ -30,7 +31,7 @@ int main()
 
     Stu* ptr = (Stu *)p;
 
-printf("here is message : \n");
+	printf("here is message : \n");
 
     for (int i = 0; i < 10; i++) 
     {
