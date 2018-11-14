@@ -8,6 +8,11 @@
 
 using namespace std;
 
+const char* sourceIP = "127.0.0.1";
+int sourcePort = 4096;
+const char* MyBusIP = "127.0.0.1";
+int MyBusPort;
+
 int main() 
 {
 
@@ -24,5 +29,11 @@ int main()
 
     const char p[] = "hello,i`m labai,How are u ?";
     int length = strlen(p) + 1;
+    
+    //本机发送
     int ret = station.sendToLocal(cardPtr, write, p, length);
+
+
+    //跨物理机发送
+    ret = station.sendByNetwork(pid_t pid, const char* ip, int port);
 }

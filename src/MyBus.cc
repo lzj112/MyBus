@@ -57,6 +57,22 @@ key_t MyBus::getKey(int proj_id, char *in_case_path)
     return keyTmp;
 }
 
+void MyBus::initShmPlane() 
+{
+    int res = plane.initShmListHead();
+    if (res == -1) 
+    {
+        std::cout << "init failed in initShmPlane" << std::endl;
+        return ;
+    }
+} 
+
+void MyBus::initPlaneSocket(const char* ip, int port) 
+{
+    plane.socketControl.startListening(ip, port);
+    
+}
+
 BusCard* MyBus::initChannelControl(key_t key) 
 {
     //开辟存储控制块的共享内存

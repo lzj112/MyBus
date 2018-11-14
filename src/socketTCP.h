@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 
+#include <iostream>
 
 const int MAXLEN = 10;
 
@@ -20,7 +21,10 @@ public:
             std::cout << "~socketTCP is failed" << std::endl;
         }
     }
-
+    int getMysockfd() 
+    {
+        return my_sockfd;
+    }
     int setNonBlock(int fd);
     int initSocketfd(int domain = AF_INET, int type = SOCK_STREAM, int protocol = 0);
     int Bind(int port, const char* ip);

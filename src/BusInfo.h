@@ -38,8 +38,9 @@ struct PacketBody
 //进程间通信需要的地址
 struct ProComm 
 {
-    char* source_IP;
-    int source_PORT;
+    pid_t pid;  //使用线程id
+    // char* source_IP;
+    // int source_PORT;
     char* dest_IP;
     int dest_PORT;
 };
@@ -47,12 +48,13 @@ struct ProComm
 //路由表
 struct RoutingTable 
 {
+    pid_t pid;
     char sourceIp[20];
     char destIp[20];
     int sourcePort;
     int destPort;
     int sockfd;
-    int shmid;
+    int shmidNext;
 };
 
 #endif
