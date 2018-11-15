@@ -9,13 +9,13 @@
 
 using namespace std;
 
+int shmid = 10125323;
 int main() 
 {
     MyBus station;
-    int shmid = 10125323;
     BusCard* cardPtr = station.getChannelControl(shmid);
 
-    void* ptr = station.getMessageQueue(cardPtr, 0);
+    void* ptr = station.getLocalQueue(cardPtr, 0);
 
     char p[256];
     station.recvFromLocal(cardPtr, ptr, p, 256);

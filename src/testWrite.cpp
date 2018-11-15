@@ -1,7 +1,7 @@
 #include <assert.h>
 #include <cstring>
 #include <sys/types.h>
-
+#include <unistd.h>
 #include <iostream>
 
 #include "MyBus.h" 
@@ -17,13 +17,11 @@ int main()
 {
 
     MyBus station;
-    key_t key = station.getKey(10);
-
-    BusCard* cardPtr = station.initChannelControl(key); //创建共享内存控制块及通信队列
+    BusCard* cardPtr = station.initChannelControl(10); //创建共享内存控制块及通信队列
 
 
     //应该转换成package body类型把
-    void* write = station.getMessageQueue(cardPtr, 1);  //获取写队列的映射地址
+    void* write = station.getLocalQueue(cardPtr, 1);  //获取写队列的映射地址
 
     // void* read = station.getMessageQueue(cardPtr, 0);   //获取读队列映射地址
 
@@ -35,5 +33,5 @@ int main()
 
 
     //跨物理机发送
-    ret = station.sendByNetwork(pid_t pid, const char* ip, int port);
+    ret = station.sendByNetwork(pid, shmid, ip, port);
 }

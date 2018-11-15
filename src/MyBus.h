@@ -22,22 +22,20 @@ class MyBus
     ~MyBus();
     
     key_t getKey(int proj_id, char* in_case_path = nullptr); //获得shmget的key
-    BusCard* initChannelControl(key_t key);                  //初始化控制块信息,以及两个队列
+    BusCard* initChannelControl(int proj_id);                  //初始化控制块信息,以及两个队列
     BusCard* getChannelControl(int shmid);                   //获得一个创建好的控制块信息
     
     void initShmPlane();
     void initPlaneSocket(const char* ip = "127.0.0.1", int port = 8080);
-    // int getNewHandle(pid_t pid);
-    
     int initShmQueue(BusCard* card);                         //初始化共享内存的队列
-    void* getMessageQueue(BusCard* cardPtr, int flag);       //获得创建的队列的地址,flag指定读写队列
+    void* getLocalQueue(BusCard* cardPtr, int flag);       //获得创建的队列的地址,flag指定读写队列
     
     int addQueueFront(BusCard* cardPtr, int flag);
     int addQueueRear(BusCard* CardPtr, int flag);
 
     int sendToLocal(BusCard* cardPtr, void* shmMapAddr, const char* buffer, int length);    //收发数据
     int recvFromLocal(BusCard* cardPtr, void* shmMadAddr, char* buffer, int length);
-    int sendByNetwork(pid_t pid, const char* ip, int port);
+    int sendByNetwork(int shmid, const char* ip, int port);
     int recvFromNetwork();
 
   private:

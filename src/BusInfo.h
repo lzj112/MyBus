@@ -9,16 +9,16 @@
 #include <sys/types.h>
 
 /*
-    proQueueNumber[0][0]存储读取队列id,[0][1]存储发送队列id,[0][2]存储当前进程id
+    [0][0]存储读取队列id,[0][1]存储发送队列id,[0][2]存储当前进程id
     通信对端进程发现存储的进程id不是本进程id,那么对应的读写队列就是它的写读队列
-    proQueueNumber[1][0],[1][1],[2][0],[2][1]存储两个队列的头尾指针
+    [1][0],[1][1],[2][0],[2][1]存储两个队列的头尾指针
 */
 struct BusCard
 {
-    key_t ftokKey;   //ftok的key
-    int shmSelfId;    //本身这块共享内存的id
-    int proQueuenNmber[3][3];
-
+    key_t ftokKey;             //ftok的key
+    int shmSelfId;             //本身这块共享内存的id
+    int localQueue[3][3];      //本机通信队列
+    int netQueue[3][2];        //跨机通信队列
 };
 
 
@@ -54,6 +54,14 @@ struct RoutingTable
     int sourcePort;
     int destPort;
     int sockfd;
+    int shmidNext;
+};
+
+struct proToNetqueue 
+{
+    pid_t pid;
+    int readQueue;
+    int writeQueue;
     int shmidNext;
 };
 

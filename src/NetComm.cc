@@ -13,7 +13,7 @@
 同一个主机上的不同进程应该访问的都是
 这一块共享内存
 */
-int NetComm::initShmListHead() 
+int NetComm::initShmRouteList() 
 {
     key_t key = ftok("/home/lzj/MyBus", 1234);
     if (key == -1) 
@@ -22,21 +22,21 @@ int NetComm::initShmListHead()
         return -1;
     }
 
-    listHead_ID = ShmManage::shmGet(key, sizeof(RoutingTable), IPC_CREAT | 0666);
-    if (listHead_ID == -1) 
+    netListHead_ID = ShmManage::shmGet(key, sizeof(RoutingTable), IPC_CREAT | 0666);
+    if (netListHead_ID == -1) 
     {
-        std::cout << "listHead_ID == -1 inside initShmListHead()" << std::endl;
+        std::cout << "netListHead_ID == -1 inside initShmListHead()" << std::endl;
         return -1;
     }
-    if (headAddr == nullptr) 
+    if (netListHead_Addr == nullptr) 
     {
-        void* tmp = ShmManage::shmAt(listHead_ID, nullptr, 0);
+        void* tmp = ShmManage::shmAt(netListHead_ID, nullptr, 0);
         if (*(int *)tmp == -1) 
         {
             std::cout << "shmat failed insied initShmListHead()" << std::endl;
             return -1;
         }
-        headAddr = (RoutingTable *)tmp;
+        netListHead_Addr = (RoutingTable *)tmp;
     }
 
     return 0;
@@ -48,9 +48,9 @@ int NetComm::updateList(RoutingTable* infoTmp)
     {
         std::cout << "infoTmp == nullptr in update" << std::endl;
     }
-    if (headAddr == nullptr) 
+    if (netListHead_Addr == nullptr) 
     {
-        std::cout << "headAddr==nullptr in update" << std::endl;
+        std::cout << "netListHead_Addr==nullptr in update" << std::endl;
 
     }
     /*
@@ -74,12 +74,12 @@ int NetComm::updateList(RoutingTable* infoTmp)
 
     shmTmpAddr->sockfd = infoTmp->sockfd;
     shmTmpAddr->destPort = infoTmp->destPort;
-    shmTmpAddr->shmidNext = headAddr->shmidNext;
+    shmTmpAddr->shmidNext = netListHead_Addr->shmidNext;
     shmTmpAddr->sourcePort = infoTmp->sourcePort;
     strcmp(shmTmpAddr->destIp, infoTmp->destIp);
     strcmp(shmTmpAddr->sourceIp, infoTmp->sourceIp);
 
-    headAddr->shmidNext = shmid;
+    netListHead_Addr->shmidNext = shmid;
 
     int res = ShmManage::shmDt(shmTmpAddr);
     if (res == -1) 
@@ -91,7 +91,7 @@ int NetComm::updateList(RoutingTable* infoTmp)
 
 int NetComm::delListNode(int fd) 
 {
-    int shmidTmp = headAddr->shmidNext;
+    int shmidTmp = netListHead_Addr->shmidNext;
     RoutingTable* nodePtr = (RoutingTable *)ShmManage::shmAt(shmidTmp, nullptr, 0);
     if (nodePtr == nullptr) 
     {
@@ -99,7 +99,7 @@ int NetComm::delListNode(int fd)
         return 0;
     }
 
-    int preShmId = listHead_ID;
+    int preShmId = netListHead_ID;
     RoutingTable* prePtr = headAddr;
     while (*(int *)nodePtr != -1) 
     {
@@ -122,7 +122,7 @@ int NetComm::delListNode(int fd)
     }
 }
 
-int NetComm::isThereFd(RoutingTable* infoTmp) 
+int NetComm::isThereFd(RoutingTable* infoTmp, int fd) 
 {
      
 }

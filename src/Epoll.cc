@@ -14,16 +14,16 @@ void Epoll::setNonblock(int fd)
     fcntl(fd, F_SETFL, new_option);
 }
 
-void Epoll::epoll_Create(int fd) 
+void Epoll::Create(int fd) 
 {
     epollFd = epoll_create(1); 
     listenFd = fd;
     setNonblock(listenFd);
 
-    epoll_Ctl(listenFd, EPOLL_CTL_ADD);
+    Ctl(listenFd, EPOLL_CTL_ADD);
 }
 
-void Epoll::epoll_Ctl(int fd, int op) 
+void Epoll::Ctl(int fd, int op) 
 {
     epoll_event ev;
     memset(&ev, 0, sizeof(ev));
@@ -60,7 +60,7 @@ void Epoll::epollET(int epollFd, epoll_event* events, int ret)
             {
                 int connfd = newConnect(listenFd);
                 cout << "有新连接" << connfd << endl;
-                epoll_Ctl(connfd, EPOLL_CTL_ADD); //将新的连接socketfd添加到合集
+                Ctl(connfd, EPOLL_CTL_ADD); //将新的连接socketfd添加到合集
                 // addToTimeWheel(connfd);           //更新socket活跃度
             }
             else if (events[i].data.fd != timerFd) //请求发消息
@@ -85,7 +85,7 @@ void Epoll::epollET(int epollFd, epoll_event* events, int ret)
     }
 }
 
-void Epoll::epoll_Run() 
+void Epoll::Run() 
 {
     signal(SIGINT, SIG_IGN);    //忽略软终端
     signal(SIGPIPE, SIG_IGN);   //忽略sigpipe

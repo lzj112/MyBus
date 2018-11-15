@@ -1,38 +1,41 @@
 #include <iostream>
 #include <string>
+#include <unistd.h>
+#include <thread>
+using namespace std;
 
-class APP 
+struct tmp 
 {
-public:
-    APP(const std::string &ffff) 
-    {
-        std::cout << "APP(): " << ffff << std::endl;
-        // std::cout << "here is APP() \n";
-    }
-
-    APP(int i)
-    {
-        std::cout << "APP(): " << i << std::endl;
-    }
-
-    void run() 
-    {
-        std::cout << "???" << std::endl;
-    }
+    int value;
+    int shmidNext;
 };
+
+struct ttmp 
+{
+    int a;
+    char c;
+    string b;
+};
+
+template<class T>
+void isSame(const T& str) 
+{
+    if (typeid(str) == typeid(struct tmp))
+    {
+        cout << "111111111" << endl;
+        cout << T.value;
+    }
+    else if (typeid(str) == typeid(struct ttmp)) 
+    {
+        cout << "22222" << endl;
+    }
+ 
+}
 
 int main() 
 {
-    static_cast<APP>("Lv").run();
-    APP("ZiJian").run();
-    ((APP)222222).run();
+    struct tmp a;
+    isSame(a);
+    struct ttmp b;
+    isSame(b);
 }
-
-
-/*
-...
-static_cast
-类型转换的实质:
-调用了这个类型的单参构造函数
-
-*/

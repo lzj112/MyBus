@@ -17,16 +17,16 @@ public:
         close(listenFd);
     }
     void setNonblock(int fd);   
-    void epoll_Create(int fd);
-    void epoll_Ctl(int fd, int op);
-    void epoll_Run();
+    void Create(int fd);
+    void Ctl(int fd, int op);
+    void Run();
     void Stop();
     void epollET(int epollFd, epoll_event* EVENTS, int ret);
     int newConnect(int listenfd);
-    void shutDownFd(int fd);
-    void addToTimeWheel(int fd);
-    void setTimer();
-    int recvFrom(int fd, void* ptr, int n);
+    // void shutDownFd(int fd);
+    // void addToTimeWheel(int fd);
+    // void setTimer();
+    // int recvFrom(int fd, void* ptr, int n);
 
 private:
     int epollFd;            //epoll句柄
