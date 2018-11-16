@@ -22,10 +22,10 @@ public:
     int initShmList(const proToNetqueue& str);
     int updateList(RoutingTable* str);
     int updateList(proToNetqueue* str);
-    int delListNode(RoutingTable* headAddr, int fd);                            //哪个sockfd被关闭了就删除该节点
-    int delListNode(proToNetqueue* headAddr, int fd);
-    int isThereFd(RoutingTable* headAddr, int fd);
-    int isThereFd(proToNetqueue* headAddr, int fd);
+    int delListNode(int fd, const RoutingTable& str);                            //哪个sockfd被关闭了就删除该节点
+    int delListNode(int fd, const proToNetqueue& str);
+    int isThereConn(const char* ip, int port, const RoutingTable& str);
+    int isThereShm(int pid, const proToNetqueue& str);
     int initShmProList(); 
     
     socketBus socketControl;    //socket TCP连接

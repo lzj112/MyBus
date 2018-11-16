@@ -89,7 +89,7 @@ BusCard* MyBus::initChannelControl(int proj_id)
 
     //挂载到当前进程
     void* ptrTmp = ShmManage::shmAt(shmid, nullptr, 0);
-    if (*(int *)ptrTmp == -1) 
+    if (ptrTmp == (void *)-1) 
     {
         return nullptr;
     }
@@ -112,7 +112,7 @@ BusCard* MyBus::getChannelControl(int shmid)
 {
     //挂载到当前进程
     void* ptrTmp = ShmManage::shmAt(shmid, nullptr, 0);
-    if (*(int *)ptrTmp == -1) 
+    if (ptrTmp == (void *)-1) 
     {
         return nullptr;
     }

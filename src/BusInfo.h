@@ -48,7 +48,7 @@ struct ProComm
 //路由表
 struct RoutingTable 
 {
-    pid_t pid;
+    // pid_t pid;
     char sourceIp[20];
     char destIp[20];
     int sourcePort;
@@ -57,6 +57,7 @@ struct RoutingTable
     int shmidNext;
 };
 
+//MyBus中转进程中存储的各进程与其共享内存通道的对应
 struct proToNetqueue 
 {
     pid_t pid;
