@@ -22,7 +22,9 @@ public:
     void Run();
     void Stop();
     void epollET(int epollFd, epoll_event* EVENTS, int ret);
-    int newConnect(int listenfd);
+    int newConnect(int listenFd);
+    void getMessage(int connFd);
+    int recvFrom(int connFd, void* buffer, int length);
     // void shutDownFd(int fd);
     // void addToTimeWheel(int fd);
     // void setTimer();
@@ -34,7 +36,7 @@ private:
     int listenFd;             //监听socketfd
     bool runEpoll;         //停止标志
     // TimeWheel timeWheel;   //时间轮
-    int timerFd;           //定时器fd
+    // int timerFd;           //定时器fd
 }; 
 
 

@@ -12,6 +12,7 @@
 #include "NetComm.h"
 #include "ShmManage.h"
 
+
 /* 
 进程间通信组件
 */
@@ -25,11 +26,13 @@ class MyBus
     BusCard* initChannelControl(int proj_id);                  //初始化控制块信息,以及两个队列
     BusCard* getChannelControl(int shmid);                   //获得一个创建好的控制块信息
     
-    void initShmPlane();
-    void initPlaneSocket(const char* ip = "127.0.0.1", int port = 8080);
+    // void initShmPlane();
+    // void initPlaneSocket(const char* ip = "127.0.0.1", int port = 8080);
     int initShmQueue(BusCard* card);                         //初始化共享内存的队列
     void* getLocalQueue(BusCard* cardPtr, int flag);       //获得创建的队列的地址,flag指定读写队列
-    
+    // int getListenFd();
+    void prepareSocket(const char* ip, int port);
+
     int addQueueFront(BusCard* cardPtr, int flag);
     int addQueueRear(BusCard* CardPtr, int flag);
 
@@ -43,10 +46,10 @@ class MyBus
     int getQueueFront(BusCard* cardPtr, int flag);           //队列操作
     int getQueueRear(BusCard* cardPtr, int flag);
 
-    const int queueSize = 256;
     std::mutex my_lock;
     
-    NetComm plane;        //封装网络通信的细节
+    socketBus socketControl;
+    // NetComm plane;        //封装网络通信的细节
 };
 
 #endif

@@ -10,7 +10,6 @@ public:
     void startListening(const char* ip, int port);
     int sendTo();
     int recvFrom();
-    Epoll myEpoll;
-};
+};  
 
 #endif

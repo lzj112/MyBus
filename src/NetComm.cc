@@ -9,13 +9,24 @@
 #include "NetComm.h"
 #include "ShmManage.h"
 
+void NetComm::initList() 
+{
+    RoutingTable str1;
+    int res = initShmList(str1);
+    assert(res != -1);
+
+    proToNetqueue str2;
+    res = initShmList(str2);
+    assert(res != -1);
+}
+
 /*
 同一个主机上的不同进程应该访问的都是
 这一块共享内存
 */
 int NetComm::initShmList(const RoutingTable& str) 
 {
-    key_t key = ftok("/home/lzj/MyBus", 1234);
+    key_t key = ftok(PATH, 1234);
     if (key == -1) 
     {
         std::cout << "initShmListHead() is failed 1" << std::endl;
@@ -23,19 +34,10 @@ int NetComm::initShmList(const RoutingTable& str)
     }
 
     netListHead_ID = ShmManage::shmGet(key, sizeof(RoutingTable), IPC_CREAT | 0666);
-    if (netListHead_ID == -1) 
-    {
-        std::cout << "netListHead_ID == -1 inside initShmListHead() 1" << std::endl;
-        return -1;
-    }
+  
     if (netListHead_Addr == nullptr) 
     {
         void* tmp = ShmManage::shmAt(netListHead_ID, nullptr, 0);
-        if (tmp == (void *)-1) 
-        {
-            std::cout << "shmat failed insied initShmListHead() 1" << std::endl;
-            return -1;
-        }
         netListHead_Addr = (RoutingTable *)tmp;
     }
 
@@ -44,7 +46,7 @@ int NetComm::initShmList(const RoutingTable& str)
 
 int NetComm::initShmList(const proToNetqueue& str) 
 {
-    key_t key = ftok("/home/lzj/MyBus", 3456);
+    key_t key = ftok(PATH, 3456);
     if (key == -1) 
     {
         std::cout << "initShmListHead() is failed 2" << std::endl;
@@ -52,23 +54,24 @@ int NetComm::initShmList(const proToNetqueue& str)
     }
 
     proListHead_ID = ShmManage::shmGet(key, sizeof(proToNetqueue), IPC_CREAT | 0666);
-    if (proListHead_ID == -1) 
-    {
-        std::cout << "netListHead_ID == -1 inside initShmListHead() 2" << std::endl;
-        return -1;
-    }
     if (proListHead_Addr == nullptr) 
     {
         void* tmp = ShmManage::shmAt(proListHead_ID, nullptr, 0);
-        if (tmp == (void *)-1) 
-        {
-            std::cout << "shmat failed insied initShmListHead() 2" << std::endl;
-            return -1;
-        }
         proListHead_Addr = (proToNetqueue *)tmp;
     }
 
     return 0;
+}
+
+int NetComm::creShmQueue(int proj_id) 
+{
+    key_t key = ftok(PATH, proj_id);
+    assert(key != -1);
+
+    int shmid = ShmManage::shmGet(key, sizeof(PacketBody) * QUEUESIZE, IPC_CREAT | 0666);
+    assert(shmid != -1);
+
+    return shmid;
 }
 
 int NetComm::updateList(RoutingTable* str) 
@@ -89,18 +92,8 @@ int NetComm::updateList(RoutingTable* str)
     //每个端口都唯一,这样保证了key唯一
     key_t key = static_cast<key_t> (str->sockfd);
     int shmid = ShmManage::shmGet(key, sizeof(RoutingTable), IPC_CREAT | 0666);
-    if (shmid == -1) 
-    {
-        std::cout << "shmget is failed in update 1" << std::endl;
-        return -1;
-    }
 
     RoutingTable* shmTmpAddr = (RoutingTable *)ShmManage::shmAt(shmid, nullptr, 0);
-    if (shmTmpAddr == (void *)-1) 
-    {
-        std::cout << "shmat is failed " << std::endl;
-        return -1;
-    } 
 
     shmTmpAddr->sockfd = str->sockfd;
     shmTmpAddr->destPort = str->destPort;
@@ -111,12 +104,7 @@ int NetComm::updateList(RoutingTable* str)
 
     netListHead_Addr->shmidNext = shmid;    //头结点指向新节点
 
-    int res = ShmManage::shmDt(shmTmpAddr);
-    if (res == -1) 
-    {
-        std::cout << "shmdt is failed in update 1" << std::endl;
-        return -1;
-    }
+    ShmManage::shmDt(shmTmpAddr);
 }
 
 int NetComm::updateList(proToNetqueue* str) 
@@ -139,32 +127,18 @@ int NetComm::updateList(proToNetqueue* str)
     }
 
     int shmid = ShmManage::shmGet(key, sizeof(proToNetqueue), IPC_CREAT | 0666);
-    if (shmid == -1) 
-    {
-        std::cout << "shmget is failed in update 2" << std::endl;
-        return -1;
-    }
 
     proToNetqueue* tmpAddr = (proToNetqueue *)ShmManage::shmAt(shmid, nullptr, 0);
-    if (tmpAddr == (void *)-1) 
-    {
-        std::cout << "shmat is failed in update 2" << std::endl;
-        return -1;
-    }
 
     //赋值新节点
-    // tmpAddr->pid = str->pid;
-    tmpAddr->readQueue = str->readQueue;
-    tmpAddr->writeQueue = str->writeQueue;
+    tmpAddr->pid = str->pid;
+    tmpAddr->readQueue = creShmQueue(str->pid | READ);
+    tmpAddr->writeQueue = creShmQueue(str->pid | WRITE);
     tmpAddr->shmidNext = proListHead_Addr->shmidNext;   //新节点指向头结点下一节点
+    
     proListHead_Addr->shmidNext = shmid;                //头结点指向新节点
 
-    int res = ShmManage::shmDt(tmpAddr);
-    if (res == -1) 
-    {
-        std::cout << "shmdt is failed in update 2" << std::endl;
-        return -1;
-    }
+    ShmManage::shmDt(tmpAddr);
 }
 
 int NetComm::delListNode(int fd, const RoutingTable& str) 
@@ -172,11 +146,6 @@ int NetComm::delListNode(int fd, const RoutingTable& str)
     int shmidTmp = netListHead_Addr->shmidNext;
     //指向头结点的下一个节点
     RoutingTable* nodePtr = (RoutingTable *)ShmManage::shmAt(shmidTmp, nullptr, 0);
-    if (nodePtr == (void *)-1) 
-    {
-        std::cout << "shmat is failed in del 1" << std::endl;
-        return 0;
-    }
 
     RoutingTable* prePtr = netListHead_Addr;    //指向前一个节点
     while (nodePtr != (void *)-1) 
@@ -190,9 +159,7 @@ int NetComm::delListNode(int fd, const RoutingTable& str)
 
             //删除该节点
             int res = ShmManage::shmDt(nodePtr);
-            assert(res != -1);
             res = ShmManage::shmCtl(tmp, IPC_RMID, 0);
-            assert(res != -1);
         }
         
         //前一节点指向该节点
@@ -202,8 +169,7 @@ int NetComm::delListNode(int fd, const RoutingTable& str)
         //该指针指向下一块共享内存
         nodePtr = (RoutingTable *)ShmManage::shmAt(nextId, nullptr, 0);
         //解除该节点的内存映射
-        int res = ShmManage::shmDt(tmpAddr);
-        assert(res != -1);
+        ShmManage::shmDt(tmpAddr);
     }
 }
 
@@ -212,11 +178,6 @@ int NetComm::delListNode(int pid, const proToNetqueue& str)
     int shmidTmp = proListHead_Addr->shmidNext;
     //指向头结点的下一个节点
     proToNetqueue* nodePtr = (proToNetqueue *)ShmManage::shmAt(shmidTmp, nullptr, 0);
-    if (nodePtr == (void *)-1) 
-    {
-        std::cout << "shmat is failed in del 2" << std::endl;
-        return 0;
-    }
 
     proToNetqueue* prePtr = proListHead_Addr;    //指向前一个节点
     while (nodePtr != (void *)-1) 
@@ -230,9 +191,7 @@ int NetComm::delListNode(int pid, const proToNetqueue& str)
 
             //删除该节点
             int res = ShmManage::shmDt(nodePtr);
-            assert(res != -1);
             res = ShmManage::shmCtl(tmp, IPC_RMID, 0);
-            assert(res != -1);
         }
         
         //前一节点指向该节点
@@ -242,19 +201,12 @@ int NetComm::delListNode(int pid, const proToNetqueue& str)
         //该指针指向下一块共享内存
         nodePtr = (proToNetqueue *)ShmManage::shmAt(nextId, nullptr, 0);
         //解除该节点的内存映射
-        int res = ShmManage::shmDt(tmpAddr);
-        assert(res != -1);
+        ShmManage::shmDt(tmpAddr);
     }
 }
 
 int NetComm::isThereConn(const char* ip, int port, const RoutingTable& str) 
 {
-    if (netListHead_Addr == nullptr) 
-    {
-        std::cout << "netheadaddr == nullptr" << std::endl;
-        return -1;
-    }
-
     int nextNode = netListHead_Addr->shmidNext;
     if (nextNode == 0) 
     {
@@ -262,10 +214,6 @@ int NetComm::isThereConn(const char* ip, int port, const RoutingTable& str)
     }
     //指向头结点下一节点
     RoutingTable* nodePtr = (RoutingTable *)ShmManage::shmAt(nextNode, nullptr, 0);
-    if (nodePtr == (void *)-1) 
-    {
-        return -1;
-    }
 
     int connfd = -1;
     while (nodePtr == (void *)-1) 
@@ -280,15 +228,47 @@ int NetComm::isThereConn(const char* ip, int port, const RoutingTable& str)
         int nextId = nodePtr->shmidNext;
         RoutingTable* tmpAddr = nodePtr;
         nodePtr = (RoutingTable *)ShmManage::shmAt(nextId, nullptr, 0);
-        int res = ShmManage::shmDt(tmpAddr);
-        assert(res != -1);
+        ShmManage::shmDt(tmpAddr);
     }
 
     return connfd;
 }
 
-int NetComm::isThereShm(int fd, const proToNetqueue& str) 
+int NetComm::getProShmQueue(int fd, int flag) 
 {
-    
+    if (flag > 1 || flag < 0) 
+    {
+        std::cout << "falg is wrong" << std::endl;
+        return -1;
+    }
+    int nextNodeId = proListHead_Addr->shmidNext;
+    if (nextNodeId == 0) 
+    {
+        return -1;
+    }
+
+    proToNetqueue* nodePtr = (proToNetqueue *)ShmManage::shmAt(nextNodeId, nullptr, 0);
+
+    int queueID = -1;
+    while (nodePtr != (void *)-1) 
+    {
+        if (nodePtr->pid == fd) 
+        {
+            queueID = (flag == 0) ? nodePtr->readQueue : nodePtr->writeQueue;
+            break;
+        }
+
+        proToNetqueue* tmpAddr = nodePtr;
+        nextNodeId = nodePtr->shmidNext;
+        ShmManage::shmDt(tmpAddr);
+        nodePtr = (proToNetqueue *)ShmManage::shmAt(nextNodeId, nullptr, 0);
+    }
+
+    return queueID;
 }
 
+int NetComm::getListenFd() 
+{
+    int listeningFd = socketControl.getMysockfd();
+    return listeningFd;
+}

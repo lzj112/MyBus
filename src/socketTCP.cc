@@ -29,7 +29,7 @@ int socketTCP::initSocketfd(int domain, int type, int protocol)
     return 0;
 }
 
-int socketTCP::Bind(int port, const char* ip) 
+int socketTCP::Bind(const char* ip, int port) 
 {
     if (ip == nullptr) 
     {
@@ -62,7 +62,7 @@ int socketTCP::Listen(int backlog)
     return 0;
 }
 
-int socketTCP::Connect(int port, const char* ip) 
+int socketTCP::Connect(const char* ip, int port) 
 {
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;

@@ -3,8 +3,10 @@
 #include <signal.h>
 #include <netinet/in.h>
 
+#include <iostream>
+
 #include "Epoll.h"
-using namespace std;
+#include "BusInfo.h"
 
 void Epoll::setNonblock(int fd) 
 {
@@ -38,15 +40,32 @@ void Epoll::Stop()
     close(epollFd);
 }
 
-int Epoll::newConnect(int fd) 
+int Epoll::newConnect(int listenFd) 
 {
+    int connfd;
     /*
     新的连接套接字也每个都设置成非阻塞
     */
     struct sockaddr_in client;
     socklen_t cliLength = sizeof(client);
-    int connfd = accept(fd, (sockaddr *)&client, &cliLength); //读取新连接
-    setNonblock(connfd);  //设置为非阻塞
+    while (1)
+   { 
+        memset(&client, 0, cliLength);   
+        connfd = accept(listenFd, (sockaddr *)&client, &cliLength); //读取新连接
+        if (connfd <= 0) 
+        {
+            break;
+        }
+        setNonblock(connfd);  //设置为非阻塞
+        Ctl(connfd, EPOLL_CTL_ADD); //将新的连接socketfd添加到合集
+    }
+    if (connfd == -1) 
+    {
+        if (errno != EAGAIN && errno != ECONNABORTED && errno != EINTR) 
+        {
+            perror("accept is wrong : ");
+        }
+    }
     return connfd;
 }
 
@@ -58,15 +77,14 @@ void Epoll::epollET(int epollFd, epoll_event* events, int ret)
         {
             if (events[i].data.fd == listenFd) //是新的连接请求
             {
-                int connfd = newConnect(listenFd);
-                cout << "有新连接" << connfd << endl;
-                Ctl(connfd, EPOLL_CTL_ADD); //将新的连接socketfd添加到合集
-                // addToTimeWheel(connfd);           //更新socket活跃度
+                //循环读取防止多个连接到来
+                newConnect(listenFd);
             }
-            else if (events[i].data.fd != timerFd) //请求发消息
+            else if (events[i].data.fd & EPOLLIN) //请求发消息
             {
                 // timeWheel.adjust(events[i].data.fd);
                 // assignedTask(events[i].data.fd); //解析下载请求
+                
             }
         //     else    //定时器到期
         //     {
@@ -77,10 +95,6 @@ void Epoll::epollET(int epollFd, epoll_event* events, int ret)
         //             timeWheel.tick(); //指定定时任务
         //         }
         //     }
-        }
-        else if (events[i].events & EPOLLRDHUP) //是客户端断开连接
-        {
-            // disconnect(events[i].data.fd, errno);
         }
     }
 }
@@ -96,7 +110,8 @@ void Epoll::Run()
         ret = epoll_wait(epollFd, events, FDNUMBER, 0); //执行一次非阻塞检测
         if (ret == -1) 
         {
-            std::cout << "epoll_wait is wrong" << std::endl;
+            perror("epoll_wait has err :");
+            exit(1);
         }        
 
         if (ret == 0)   //无事件 
@@ -109,3 +124,46 @@ void Epoll::Run()
         }
     }
 }
+
+int Epoll::recvFrom(int connFd, void* buffer, int length) 
+{
+    int count = 0;
+    int ret = 0;
+    while (count < length) 
+    {
+        ret = recv(connFd, buffer, length, 0);
+        count += ret;
+        if (ret == -1) 
+        {
+            if (errno == EINTR || errno == EWOULDBLOCK) 
+            {
+                continue;
+            }
+            else 
+            { 
+                perror("recv is wrong");
+                break;
+            }
+        }
+        if (ret == 0) 
+        {
+            Ctl(connFd, EPOLL_CTL_DEL);
+            close(connFd);
+            break;
+        }
+    }
+    return count;
+}
+
+void Epoll::getMessage(int connFd) 
+{
+    int offset = 0;
+    PacketBody tmpBuffer;
+    memset(&tmpBuffer, 0, sizeof(PacketBody));
+    //先收包头
+    offset = recvFrom(connFd, (void *)(&tmpBuffer + offset), 12);
+    //再收包体
+    recvFrom(connFd, (void *)(&tmpBuffer + offset), tmpBuffer.head.bodySzie);
+    
+}
+

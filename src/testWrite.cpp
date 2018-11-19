@@ -21,7 +21,7 @@ int main()
 
 
     //应该转换成package body类型把
-    void* write = station.getLocalQueue(cardPtr, 1);  //获取写队列的映射地址
+    void* write = station.getLocalQueue(cardPtr, WRITE);  //获取写队列的映射地址
 
     // void* read = station.getMessageQueue(cardPtr, 0);   //获取读队列映射地址
 

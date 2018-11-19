@@ -8,12 +8,14 @@
 using namespace std;
 
 
-
+struct a 
+{
+    int a;
+    int b;
+    char unused[4];
+};
 int main() 
 {
-    void* tmp = shmat(123, nullptr, 0);
-    if (tmp == (void *)-1) 
-    {
-        cout << "asasasas" << endl;
-    }
+  struct a A;
+  cout << sizeof(A) << endl;
 }

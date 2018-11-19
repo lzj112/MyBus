@@ -57,42 +57,32 @@ key_t MyBus::getKey(int proj_id, char *in_case_path)
     return keyTmp;
 }
 
+/*
 void MyBus::initShmPlane() 
 {
-    int res = plane.initShmListHead();
-    if (res == -1) 
-    {
-        std::cout << "init failed in initShmPlane" << std::endl;
-        return ;
-    }
+    plane.initList();
 } 
 
 void MyBus::initPlaneSocket(const char* ip, int port) 
 {
+    if (ip == nullptr) 
+    {
+        std::cout << "ip == nullptr in initplanesocket" << std::endl;
+        return ;
+    }
     plane.socketControl.startListening(ip, port);
-
 }
+*/
 
 BusCard* MyBus::initChannelControl(int proj_id) 
 {
     key_t key = getKey(proj_id);
     //开辟存储控制块的共享内存
     int shmid = ShmManage::shmGet(key, sizeof(BusCard), IPC_CREAT | 0666);
-    if (shmid == -1) 
-    {
-        return nullptr;
-    }
-    else 
-    {
-        std::cout << "Channel Control shm_id = " << shmid << std::endl;
-    }
+    std::cout << "Channel Control shm_id = " << shmid << std::endl;
 
     //挂载到当前进程
     void* ptrTmp = ShmManage::shmAt(shmid, nullptr, 0);
-    if (ptrTmp == (void *)-1) 
-    {
-        return nullptr;
-    }
 
     BusCard* cardPtr = (BusCard *)ptrTmp;
     // memset(cardPtr->localQueue, 0, sizeof(cardPtr->localQueue)); 
@@ -112,10 +102,6 @@ BusCard* MyBus::getChannelControl(int shmid)
 {
     //挂载到当前进程
     void* ptrTmp = ShmManage::shmAt(shmid, nullptr, 0);
-    if (ptrTmp == (void *)-1) 
-    {
-        return nullptr;
-    }
 
     BusCard* cardPtr = (BusCard *)ptrTmp;
     
@@ -135,11 +121,7 @@ int MyBus::initShmQueue(BusCard* card)
         int keyTmp = (card->ftokKey >> 16) + i;  //防止重复
         int key_ = getKey(keyTmp);
     
-        int shmid = ShmManage::shmGet(keyTmp, sizeof(PacketBody) * queueSize, IPC_CREAT | 0666);
-        if (shmid == -1) 
-        {
-           return -1;
-        }
+        int shmid = ShmManage::shmGet(keyTmp, sizeof(PacketBody) * QUEUESIZE, IPC_CREAT | 0666);
         
         if (i < 2) 
         {
@@ -183,6 +165,19 @@ void* MyBus::getLocalQueue(BusCard* cardPtr, int flag) //flag=0期望读队列,=
     tmpPtr = ShmManage::shmAt(shmid, nullptr, 0);
 
     return tmpPtr;
+}
+
+/*
+int MyBus::getListenFd() 
+{
+    return plane.socketControl.getMysockfd();
+}
+*/
+
+void MyBus::prepareSocket(const char* ip, int port) 
+{
+    socketControl.initSocketfd();
+    socketControl.Bind(ip, port);
 }
 
 int MyBus::getQueueFront(BusCard* cardPtr, int flag) 
