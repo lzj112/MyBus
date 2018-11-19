@@ -34,11 +34,6 @@ void Epoll::Ctl(int fd, int op)
     epoll_ctl(epollFd, op, fd, &ev);
 }
 
-void Epoll::Stop() 
-{
-    runEpoll = false;
-    close(epollFd);
-}
 
 int Epoll::newConnect(int listenFd) 
 {
@@ -69,8 +64,10 @@ int Epoll::newConnect(int listenFd)
     return connfd;
 }
 
-void Epoll::epollET(int epollFd, epoll_event* events, int ret) 
+
+std::vector<int> Epoll::epollET(int epollFd, epoll_event* events, int ret) 
 {
+    std::vector<int> tmp;
     for (int i = 0; i < ret; i++)
     {
         if (events[i].events & EPOLLIN) //有EPOLLIN事件
@@ -80,8 +77,9 @@ void Epoll::epollET(int epollFd, epoll_event* events, int ret)
                 //循环读取防止多个连接到来
                 newConnect(listenFd);
             }
-            else if (events[i].data.fd & EPOLLIN) //请求发消息
+            else if (events[i].data.fd & EPOLLIN) //有数据可读
             {
+                tmp.push_back(events[i].data.fd);
                 // timeWheel.adjust(events[i].data.fd);
                 // assignedTask(events[i].data.fd); //解析下载请求
                 
@@ -97,73 +95,23 @@ void Epoll::epollET(int epollFd, epoll_event* events, int ret)
         //     }
         }
     }
+    return tmp;
 }
 
-void Epoll::Run() 
+std::vector<int> Epoll::Wait() 
 {
-    signal(SIGINT, SIG_IGN);    //忽略软终端
-    signal(SIGPIPE, SIG_IGN);   //忽略sigpipe
-
     int ret;
-    while (runEpoll) 
+    ret = epoll_wait(epollFd, events, FDNUMBER, 0); //执行一次非阻塞检测
+    if (ret == -1) 
     {
-        ret = epoll_wait(epollFd, events, FDNUMBER, 0); //执行一次非阻塞检测
-        if (ret == -1) 
-        {
-            perror("epoll_wait has err :");
-            exit(1);
-        }        
-
-        if (ret == 0)   //无事件 
-        {
-            continue;
-        }
-        else 
-        {
-            epollET(epollFd, events, ret); 
-        }
-    }
-}
-
-int Epoll::recvFrom(int connFd, void* buffer, int length) 
-{
-    int count = 0;
-    int ret = 0;
-    while (count < length) 
-    {
-        ret = recv(connFd, buffer, length, 0);
-        count += ret;
-        if (ret == -1) 
-        {
-            if (errno == EINTR || errno == EWOULDBLOCK) 
-            {
-                continue;
-            }
-            else 
-            { 
-                perror("recv is wrong");
-                break;
-            }
-        }
-        if (ret == 0) 
-        {
-            Ctl(connFd, EPOLL_CTL_DEL);
-            close(connFd);
-            break;
-        }
-    }
-    return count;
-}
-
-void Epoll::getMessage(int connFd) 
-{
-    int offset = 0;
-    PacketBody tmpBuffer;
-    memset(&tmpBuffer, 0, sizeof(PacketBody));
-    //先收包头
-    offset = recvFrom(connFd, (void *)(&tmpBuffer + offset), 12);
-    //再收包体
-    recvFrom(connFd, (void *)(&tmpBuffer + offset), tmpBuffer.head.bodySzie);
+        perror("epoll_wait has err ");
+        exit(1);
+    }    
     
+    return epollET(epollFd, events, ret); 
 }
+
+
+
+
 

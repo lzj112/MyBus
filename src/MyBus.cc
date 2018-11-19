@@ -20,16 +20,8 @@ MyBus::~MyBus()
 //获取当前工作目录
 char *MyBus::getPath(char *buffer, size_t size)
 {
-    if (buffer == nullptr)
-    {
-        std::cout << "buffer is nullptr" << std::endl;
-        return nullptr;
-    }
     buffer = getcwd(buffer, size);
-    if (buffer == nullptr)
-    {
-        perror("getcwd is failed : ");
-    }
+
     return buffer; //getcwd失败返回的也是nullptr
 }
 
@@ -43,11 +35,7 @@ key_t MyBus::getKey(int proj_id, char *in_case_path)
     }
 
     char *path = getPath(buffer, (size_t)50);
-    if (path == nullptr)
-    {
-        perror("path is nullptr : ");
-        exit(1);
-    }
+    
     key_t keyTmp = ftok(buffer, proj_id); //获得key
     if (keyTmp == -1)
     {
@@ -78,15 +66,11 @@ BusCard* MyBus::initChannelControl(int proj_id)
 {
     key_t key = getKey(proj_id);
     //开辟存储控制块的共享内存
-    int shmid = ShmManage::shmGet(key, sizeof(BusCard), IPC_CREAT | 0666);
+    int shmid = ShmManage::Get(key, sizeof(BusCard), IPC_CREAT | 0666);
     std::cout << "Channel Control shm_id = " << shmid << std::endl;
 
     //挂载到当前进程
-    void* ptrTmp = ShmManage::shmAt(shmid, nullptr, 0);
-
-    BusCard* cardPtr = (BusCard *)ptrTmp;
-    // memset(cardPtr->localQueue, 0, sizeof(cardPtr->localQueue)); 
-    //shmget创建的字段会自动全部被初始化0
+    BusCard* cardPtr = static_cast<BusCard *> (ShmManage::At(shmid, nullptr, 0));
 
     cardPtr->shmSelfId = shmid;
     cardPtr->ftokKey = key;
@@ -101,11 +85,7 @@ BusCard* MyBus::initChannelControl(int proj_id)
 BusCard* MyBus::getChannelControl(int shmid) 
 {
     //挂载到当前进程
-    void* ptrTmp = ShmManage::shmAt(shmid, nullptr, 0);
-
-    BusCard* cardPtr = (BusCard *)ptrTmp;
-    
-    return cardPtr;
+    return static_cast<BusCard *>(ShmManage::At(shmid, nullptr, 0));
 }
 
 
@@ -116,22 +96,14 @@ int MyBus::initShmQueue(BusCard* card)
         return -1;
     }
 
-    for (int i = 0; i < 4; i++) 
+    for (int i = 0; i < 2; i++) 
     {
         int keyTmp = (card->ftokKey >> 16) + i;  //防止重复
         int key_ = getKey(keyTmp);
     
-        int shmid = ShmManage::shmGet(keyTmp, sizeof(PacketBody) * QUEUESIZE, IPC_CREAT | 0666);
+        int shmid = ShmManage::Get(keyTmp, sizeof(PacketBody) * QUEUESIZE, IPC_CREAT | 0666);
         
-        if (i < 2) 
-        {
-            card->localQueue[0][i] = shmid; //存储两个队列的shmid
-        }
-        else if (i >= 2) 
-        {
-            int tmp = i % 2;
-            card->netQueue[0][tmp] = shmid;  
-        }
+        card->localQueue[0][i] = shmid; //存储两个队列的shmid
         
         shmid = 0;
         keyTmp = 0;
@@ -161,10 +133,7 @@ void* MyBus::getLocalQueue(BusCard* cardPtr, int flag) //flag=0期望读队列,=
     }
     
     //将该队列挂载到当前进程
-    void* tmpPtr = nullptr;
-    tmpPtr = ShmManage::shmAt(shmid, nullptr, 0);
-
-    return tmpPtr;
+    return ShmManage::At(shmid, nullptr, 0);
 }
 
 /*
@@ -287,7 +256,7 @@ int MyBus::sendToLocal(BusCard* cardPtr, void* shmMapAddr, const char* buffer, i
 
     int queueFront = getQueueFront(cardPtr, 1); //获得写队列头尾指针
     int queueRear = getQueueRear(cardPtr, 1);
-    if ((queueRear + 1) % queueSize == queueFront) //队列满,牺牲了队列中一个元素保持控来判断队满
+    if ((queueRear + 1) % QUEUESIZE == queueFront) //队列满,牺牲了队列中一个元素保持控来判断队满
     {
         std::cout << "sendtolocal 2" << std::endl;
         return -1;
@@ -295,7 +264,7 @@ int MyBus::sendToLocal(BusCard* cardPtr, void* shmMapAddr, const char* buffer, i
 
     {
         std::lock_guard<std::mutex> locker(my_lock);    //上锁
-        PacketBody* destPtr = (PacketBody *)shmMapAddr;
+        PacketBody* destPtr = static_cast<PacketBody *> (shmMapAddr);
         if (length >= PacketBodyBufferSize) 
         {
             std::cout << "sendtolocal 3" << std::endl;
@@ -327,7 +296,7 @@ int MyBus::recvFromLocal(BusCard* cardPtr, void* shmMadAddr, char* buffer, int l
     {
         std::lock_guard<std::mutex> locker(my_lock);    //上锁
 
-        PacketBody* sourcePtr = (PacketBody *)shmMadAddr;
+        PacketBody* sourcePtr = static_cast<PacketBody *> (shmMadAddr);
         strncpy(buffer, (sourcePtr + queueFront)->buffer, length);
 
         addQueueFront(cardPtr, 1);  //移动队头指针

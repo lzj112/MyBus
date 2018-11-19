@@ -20,7 +20,7 @@ ShmManage::~ShmManage()
 }
 
 
-int ShmManage::shmGet(key_t key, size_t size, int flag) 
+int ShmManage::Get(key_t key, size_t size, int flag) 
 {
     if (key < 0 || size < 0) 
     {
@@ -36,7 +36,7 @@ int ShmManage::shmGet(key_t key, size_t size, int flag)
     return shm_id;
 }
 
-void* ShmManage::shmAt(int shmid, const void *addr, int flag) 
+void* ShmManage::At(int shmid, const void *addr, int flag) 
 {
     if (shmid <= 0) 
     {
@@ -47,12 +47,12 @@ void* ShmManage::shmAt(int shmid, const void *addr, int flag)
     if (tmp_Addr == (void *)-1) 
     {
         perror("ShareDt is failed : ");
-        exit(1);
+        // exit(1);
     }
     return tmp_Addr;
 }
 
-int ShmManage::shmDt(const void *addr) 
+int ShmManage::Dt(const void *addr) 
 {
     if (addr == nullptr) 
     {
@@ -69,7 +69,7 @@ int ShmManage::shmDt(const void *addr)
     return ret;
 }
 
-int ShmManage::shmCtl(int shmid, int cmd, struct shmid_ds *buf) 
+int ShmManage::Ctl(int shmid, int cmd, struct shmid_ds *buf) 
 {
     if (shmid <= 0) 
     {   

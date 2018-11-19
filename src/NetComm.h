@@ -7,7 +7,7 @@
 网络部分
 */
 
-// #include <typeinfo.h>
+#include <vector>
 
 #include "BusInfo.h"
 #include "socketBus.h"
@@ -17,7 +17,8 @@ class NetComm
 public:
     
     NetComm() : netListHead_ID(-1), netListHead_Addr(nullptr), 
-                proListHead_ID(-2), proListHead_Addr(nullptr)
+            proListHead_ID(-2), proListHead_Addr(nullptr), isRun(true)
+
     {}
 
     void initList();
@@ -27,22 +28,27 @@ public:
     int updateList(proToNetqueue* str);
     int creShmQueue(int proj_id);
     int delListNode(int fd, const RoutingTable& str);                            //哪个sockfd被关闭了就删除该节点
-    int delListNode(int fd, const proToNetqueue& str);
+    int delListNode(const char* ip, int port, const proToNetqueue& str);
     int isThereConn(const char* ip, int port, const RoutingTable& str);
-    int getProShmQueue(int pid, int flag);
-
+    int getProShmQueue(const char* ip, int port, int flag);
     int getListenFd();
-    
+
+    //在这里运行epoll run,读取数据拿出来让NetComm做
+    void runMyEpoll();
+    void recvFrom(int confd);
+    int getMessage(int connfd, void* buffer, int length);
+
     Epoll myEpoll;
     socketBus socketControl;    //socket TCP连接
 
 private:
     
-
     int netListHead_ID;                 //路由表头shmid
     RoutingTable* netListHead_Addr;     //路由表头映射地址
     int proListHead_ID;                 //进程对应shm队列表
     proToNetqueue* proListHead_Addr;    //进程对应表映射地址
+
+    bool isRun;
 };
 
 #endif

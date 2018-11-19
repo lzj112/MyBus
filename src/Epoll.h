@@ -3,6 +3,8 @@
 
 #include <sys/epoll.h>
 
+#include <vector>
+
 #include "socketBus.h"
 
 #define FDNUMBER 1204
@@ -11,7 +13,7 @@
 class Epoll 
 {
 public:
-    Epoll() : epollFd(-1), listenFd(-1), runEpoll(true){}
+    Epoll() : epollFd(-1), listenFd(-1){}
     ~Epoll() 
     {
         close(listenFd);
@@ -19,13 +21,12 @@ public:
     void setNonblock(int fd);   
     void Create(int fd);
     void Ctl(int fd, int op);
-    void Run();
-    void Stop();
-    void epollET(int epollFd, epoll_event* EVENTS, int ret);
+    
     int newConnect(int listenFd);
-    void getMessage(int connFd);
-    int recvFrom(int connFd, void* buffer, int length);
-    // void shutDownFd(int fd);
+    
+    std::vector<int> Wait();
+    std::vector<int> epollET(int epollFd, epoll_event* EVENTS, int ret);
+    
     // void addToTimeWheel(int fd);
     // void setTimer();
     // int recvFrom(int fd, void* ptr, int n);
@@ -34,7 +35,6 @@ private:
     int epollFd;            //epoll句柄
     epoll_event events[FDNUMBER];  //fd合集
     int listenFd;             //监听socketfd
-    bool runEpoll;         //停止标志
     // TimeWheel timeWheel;   //时间轮
     // int timerFd;           //定时器fd
 }; 

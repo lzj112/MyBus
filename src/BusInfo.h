@@ -34,33 +34,33 @@ struct PacketHead
 {
     int type;
     int bodySzie;
-    char unused[4];
+    char unused[4]; //用于对齐 无意义
 };
 
 struct PacketBody
 {
     struct PacketHead head;
-    pid_t destPid;
+    struct ProComm netQuaad;    //四元组 确定对端IP port
     char buffer[256];
 };
 
 //进程间通信需要的地址
 struct ProComm 
 {
-    pid_t pid;  //
     // char* source_IP;
     // int source_PORT;
     int dest_PORT;
     int dest_ip[20];
+    char unused[4];
 };
 
 //路由表
 struct RoutingTable 
 {
     // pid_t pid;
-    char sourceIp[20];
+    // char sourceIp[20];
+    // int sourcePort;
     char destIp[20];
-    int sourcePort;
     int destPort;
     int sockfd;
     int shmidNext;
@@ -69,11 +69,14 @@ struct RoutingTable
 //MyBus中转进程中存储的各进程与其共享内存通道的对应
 struct proToNetqueue 
 {
-    pid_t pid;
+    // pid_t pid;
+    char destIP[20];
+    int destPort;
     int readQueue;
     int writeQueue;
-    int shmidNext;
     int netQueue[3][2];        //进程通道的头尾指针
+    
+    int shmidNext;
 };
 
 #endif

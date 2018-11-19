@@ -13,6 +13,7 @@ int main()
     plane.initList();
     plane.socketControl.startListening(ip, port);
 
-    plane.myEpoll.Create(plane.getListenFd());
-    plane.myEpoll.Run();
+    // plane.myEpoll.Create(plane.getListenFd());
+    // plane.myEpoll.Run();
+    plane.runMyEpoll();
 }
