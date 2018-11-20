@@ -47,7 +47,7 @@ void* ShmManage::At(int shmid, const void *addr, int flag)
     if (tmp_Addr == (void *)-1) 
     {
         perror("ShareDt is failed : ");
-        // exit(1);
+        exit(1);
     }
     return tmp_Addr;
 }

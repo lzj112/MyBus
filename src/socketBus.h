@@ -1,7 +1,6 @@
 #ifndef _SOCKETBUS_H
 #define _SOCKETBUS_H
 
-#include "Epoll.h"
 #include "socketTCP.h"
 
 class socketBus : public socketTCP 

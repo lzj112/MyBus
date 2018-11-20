@@ -1,8 +1,11 @@
 #include <cstdlib>
-#include <unistd.h>
 #include <cstring>
+#include <net/if.h>
+#include <unistd.h>
 #include <sys/sem.h>
 #include <sys/shm.h>
+#include <sys/ioctl.h>
+#include <arpa/inet.h>
 #include <sys/types.h>
 
 #include <iostream>
@@ -246,6 +249,36 @@ int MyBus::addQueueRear(BusCard* cardPtr, int flag)
     return 1;
 }
 
+char* MyBus::getLocalIP() 
+{
+    int MAXINTERFACES = 16;
+    char* ip = NULL;
+    int fd, intrface, retn = 0;
+    struct ifreq buf[MAXINTERFACES];
+    struct ifconf ifc;
+
+    if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) >= 0)
+    {
+        ifc.ifc_len = sizeof(buf);
+        ifc.ifc_buf = (caddr_t)buf;
+        if (!ioctl(fd, SIOCGIFCONF, (char *)&ifc))
+        {
+            intrface = ifc.ifc_len / sizeof(struct ifreq);
+
+            while (intrface-- > 0)
+            {
+                if (!(ioctl(fd, SIOCGIFADDR, (char *)&buf[intrface])))
+                {
+                    ip = (inet_ntoa(((struct sockaddr_in *)(&buf[intrface].ifr_addr))->sin_addr));
+                    break;
+                }
+            }
+        }
+        close(fd);
+        return ip;
+    }
+}
+
 int MyBus::sendToLocal(BusCard* cardPtr, void* shmMapAddr, const char* buffer, int length) 
 {
     if (cardPtr == nullptr) 
@@ -254,27 +287,33 @@ int MyBus::sendToLocal(BusCard* cardPtr, void* shmMapAddr, const char* buffer, i
         return -1;
     }
 
-    int queueFront = getQueueFront(cardPtr, 1); //获得写队列头尾指针
-    int queueRear = getQueueRear(cardPtr, 1);
+    int queueFront, queueRear;
+    {   
+        //获得写队列头尾指针
+        std::lock_guard<std::mutex> locker(my_lock);
+        queueFront = getQueueFront(cardPtr, WRITE); 
+        queueRear = getQueueRear(cardPtr, WRITE);
+    }
     if ((queueRear + 1) % QUEUESIZE == queueFront) //队列满,牺牲了队列中一个元素保持控来判断队满
     {
         std::cout << "sendtolocal 2" << std::endl;
         return -1;
     }
+    
+    PacketBody* destPtr = (static_cast<PacketBody *> (shmMapAddr) + queueRear);
+    if (length >= PacketBodyBufferSize) 
+    {
+        std::cout << "sendtolocal 3" << std::endl;
+        return -1;
+    }
+    destPtr->head.bodySzie = length;
+    strncpy(destPtr->buffer, buffer, length);
 
     {
-        std::lock_guard<std::mutex> locker(my_lock);    //上锁
-        PacketBody* destPtr = static_cast<PacketBody *> (shmMapAddr);
-        if (length >= PacketBodyBufferSize) 
-        {
-            std::cout << "sendtolocal 3" << std::endl;
-            return -1;
-        }
-        destPtr->head.bodySzie = length;
-        strncpy(destPtr->buffer, buffer, length);
-    
+        std::lock_guard<std::mutex> locker(my_lock);
         addQueueRear(cardPtr, 1);   //移动队尾指针
     }
+
 }
 
 int MyBus::recvFromLocal(BusCard* cardPtr, void* shmMadAddr, char* buffer, int length) 
@@ -285,20 +324,30 @@ int MyBus::recvFromLocal(BusCard* cardPtr, void* shmMadAddr, char* buffer, int l
         return -1;
     }
 
-    int queueFront = getQueueFront(cardPtr, 0); //获得读队列头尾指针
-    int queueRear = getQueueRear(cardPtr, 0);
+    int queueFront, queueRear;
+    {   
+        //获得写队列头尾指针
+        std::lock_guard<std::mutex> locker(my_lock);
+        queueFront = getQueueFront(cardPtr, READ); 
+        queueRear = getQueueRear(cardPtr, READ);
+    }
     if (queueFront == queueRear) //queue is empty
     {
         std::cout << "recvlocal 2" << std::endl;
         return -1;
     }
 
+    PacketBody* sourcePtr = (static_cast<PacketBody *> (shmMadAddr) + queueFront);
+    strncpy(buffer, (sourcePtr + queueFront)->buffer, length);
+
     {
-        std::lock_guard<std::mutex> locker(my_lock);    //上锁
-
-        PacketBody* sourcePtr = static_cast<PacketBody *> (shmMadAddr);
-        strncpy(buffer, (sourcePtr + queueFront)->buffer, length);
-
+        std::lock_guard<std::mutex> locker(my_lock);    
         addQueueFront(cardPtr, 1);  //移动队头指针
     }
+}
+
+int MyBus::sendByNetwork(int shmid, const char* passIP, int passPort,
+                        const char* destIP, int destPort, const char* buffer)
+{
+
 }

@@ -47,34 +47,32 @@ struct PacketBody
 //进程间通信需要的地址
 struct ProComm 
 {
-    // char* source_IP;
-    // int source_PORT;
-    int dest_PORT;
-    int dest_ip[20];
-    char unused[4];
+    char sourceIP[8];
+    int sourcePort;
+    int destPort;
+    char destIP[8];
 };
 
 //路由表
 struct RoutingTable 
 {
-    // pid_t pid;
-    // char sourceIp[20];
-    // int sourcePort;
-    char destIp[20];
-    int destPort;
+    char IP[8];
+    int port;
     int sockfd;
     int shmidNext;
 };
 
 //MyBus中转进程中存储的各进程与其共享内存通道的对应
 struct proToNetqueue 
-{
-    // pid_t pid;
-    char destIP[20];
+{   
+    int shmSelfId;
+    char sourceIP[8];
+    int sourcePort;
+    char destIP[8];
     int destPort;
     int readQueue;
     int writeQueue;
-    int netQueue[3][2];        //进程通道的头尾指针
+    int netQueue[2][2];        //进程通道的头尾指针
     
     int shmidNext;
 };

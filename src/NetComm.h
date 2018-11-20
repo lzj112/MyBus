@@ -7,9 +7,12 @@
 网络部分
 */
 
+#include <mutex>
 #include <vector>
+#include <thread>
 
 #include "BusInfo.h"
+#include <Epoll.h>
 #include "socketBus.h"
 
 class NetComm 
@@ -22,14 +25,14 @@ public:
     {}
 
     void initList();
-    int initShmList(const RoutingTable& str);                              //初始化链表头结点
-    int initShmList(const proToNetqueue& str);
-    int updateList(RoutingTable* str);
-    int updateList(proToNetqueue* str);
+    int initShmList();                              //初始化链表头结点
+    int initShmList(int);
+    int updateList(int sockfd, const char* ip, int port);
+    int updateList(const struct ProComm& str);
     int creShmQueue(int proj_id);
     int delListNode(int fd, const RoutingTable& str);                            //哪个sockfd被关闭了就删除该节点
     int delListNode(const char* ip, int port, const proToNetqueue& str);
-    int isThereConn(const char* ip, int port, const RoutingTable& str);
+    int isThereConn(const char* ip, int port);
     int getProShmQueue(const char* ip, int port, int flag);
     int getListenFd();
 
@@ -37,6 +40,8 @@ public:
     void runMyEpoll();
     void recvFrom(int confd);
     int getMessage(int connfd, void* buffer, int length);
+    void saveMessage(int shmid, const PacketBody& str);
+    void copy(PacketBody* ptr, const PacketBody& str);
 
     Epoll myEpoll;
     socketBus socketControl;    //socket TCP连接
@@ -49,6 +54,7 @@ private:
     proToNetqueue* proListHead_Addr;    //进程对应表映射地址
 
     bool isRun;
+    std::mutex my_lock;
 };
 
 #endif

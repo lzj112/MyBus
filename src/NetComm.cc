@@ -6,18 +6,17 @@
 
 #include <iostream>
 #include <thread>
+#include <algorithm>
 
 #include "NetComm.h"
 #include "ShmManage.h"
 
 void NetComm::initList() 
 {
-    RoutingTable str1;
-    int res = initShmList(str1);
+    int res = initShmList();
     assert(res != -1);
 
-    proToNetqueue str2;
-    res = initShmList(str2);
+    res = initShmList(0);
     assert(res != -1);
 }
 
@@ -25,7 +24,7 @@ void NetComm::initList()
 同一个主机上的不同进程应该访问的都是
 这一块共享内存
 */
-int NetComm::initShmList(const RoutingTable& str) 
+int NetComm::initShmList() 
 {
     key_t key = ftok(PATH, 1234);
     if (key == -1) 
@@ -44,7 +43,7 @@ int NetComm::initShmList(const RoutingTable& str)
     return 0;
 }
 
-int NetComm::initShmList(const proToNetqueue& str) 
+int NetComm::initShmList(int) 
 {
     key_t key = ftok(PATH, 3456);
     if (key == -1) 
@@ -73,32 +72,25 @@ int NetComm::creShmQueue(int proj_id)
     return shmid;
 }
 
-int NetComm::updateList(RoutingTable* str) 
+int NetComm::updateList(int sockfd, const char* ip, int port) 
 {
-    if (str == nullptr) 
+    if (ip == nullptr) 
     {
         std::cout << "infoTmp == nullptr in update 1" << std::endl;
-    }
-    if (netListHead_Addr == nullptr) 
-    {
-        std::cout << "netListHead_Addr==nullptr in update 1" << std::endl;
-
     }
     /*
     如果端口一样ip就一样,就是同一个连接,就不会存储进来
     会直接用那个连接,所以port会是唯一的
     */
     //每个端口都唯一,这样保证了key唯一
-    key_t key = static_cast<key_t> (str->sockfd);
+    key_t key = static_cast<key_t> (sockfd);
     int shmid = ShmManage::Get(key, sizeof(RoutingTable), IPC_CREAT | 0666);
 
     RoutingTable* shmTmpAddr = static_cast<RoutingTable *> (ShmManage::At(shmid, nullptr, 0));
 
-    shmTmpAddr->sockfd = str->sockfd;
-    shmTmpAddr->destPort = str->destPort;
-    // shmTmpAddr->sourcePort = str->sourcePort;
-    strcmp(shmTmpAddr->destIp, str->destIp);
-    // strcmp(shmTmpAddr->sourceIp, str->sourceIp);
+    shmTmpAddr->sockfd = sockfd;
+    shmTmpAddr->port = port;
+    strcmp(shmTmpAddr->IP, ip);
     shmTmpAddr->shmidNext = netListHead_Addr->shmidNext;    //新节点指向头结点下一节点
 
     netListHead_Addr->shmidNext = shmid;    //头结点指向新节点
@@ -106,19 +98,15 @@ int NetComm::updateList(RoutingTable* str)
     ShmManage::Dt(shmTmpAddr);
 }
 
-int NetComm::updateList(proToNetqueue* str) 
+int NetComm::updateList(const struct ProComm& str) 
 {
-    if (str == nullptr) 
-    {
-        std::cout << "pointer is nullptr 2" << std::endl;
-    }
     if (proListHead_Addr == nullptr) 
     {
         std::cout << "prolisthead_addr == nullptr 2" << std::endl;
     }
 
     //进程pid也唯一,保证key唯一
-    key_t key = static_cast<key_t> (str->destPort);
+    key_t key = static_cast<key_t> (str.destPort);
     if (key == -1) 
     {
         std::cout << "key == -1 in update 2" << std::endl;
@@ -130,11 +118,14 @@ int NetComm::updateList(proToNetqueue* str)
     proToNetqueue* tmpAddr = static_cast<proToNetqueue *> (ShmManage::At(shmid, nullptr, 0));
 
     //赋值新节点
-    // tmpAddr->pid = str->pid;
-    tmpAddr->readQueue = creShmQueue(str->destPort | READ);
-    tmpAddr->writeQueue = creShmQueue(str->destPort | WRITE);
+    tmpAddr->shmSelfId = shmid;
+    tmpAddr->destPort = str.sourcePort;
+    tmpAddr->sourcePort = str.destPort;
+    strcmp(tmpAddr->destIP, str.sourceIP);
+    strcmp(tmpAddr->sourceIP, str.destIP);
+    tmpAddr->readQueue = creShmQueue(str.destPort | READ);
+    tmpAddr->writeQueue = creShmQueue(str.destPort | WRITE);
     tmpAddr->shmidNext = proListHead_Addr->shmidNext;   //新节点指向头结点下一节点
-    
     proListHead_Addr->shmidNext = shmid;                //头结点指向新节点
 
     ShmManage::Dt(tmpAddr);
@@ -147,7 +138,7 @@ int NetComm::delListNode(int fd, const RoutingTable& str)
     RoutingTable* nodePtr = static_cast<RoutingTable *> (ShmManage::At(shmidTmp, nullptr, 0));
 
     RoutingTable* prePtr = netListHead_Addr;    //指向前一个节点
-    while (nodePtr != (void *)-1) 
+    while (1)
     {
         //该节点中sockfd就是目标值
         if (nodePtr->sockfd == fd) 
@@ -165,6 +156,10 @@ int NetComm::delListNode(int fd, const RoutingTable& str)
         prePtr = nodePtr;
         int nextId = nodePtr->shmidNext;
         RoutingTable* tmpAddr = nodePtr;
+        if (nextId == 0) 
+        {
+            break;
+        }
         //该指针指向下一块共享内存
         nodePtr = static_cast<RoutingTable *> (ShmManage::At(nextId, nullptr, 0));
         //解除该节点的内存映射
@@ -179,7 +174,7 @@ int NetComm::delListNode(const char* ip, int port, const proToNetqueue& str)
     proToNetqueue* nodePtr = static_cast<proToNetqueue *> (ShmManage::At(shmidTmp, nullptr, 0));
 
     proToNetqueue* prePtr = proListHead_Addr;    //指向前一个节点
-    while (nodePtr != (void *)-1) 
+    while (1)
     {
         //该节点中sockfd就是目标值
         if ((strcmp(ip, nodePtr->destIP) == 0) && port == nodePtr->destPort) 
@@ -198,13 +193,17 @@ int NetComm::delListNode(const char* ip, int port, const proToNetqueue& str)
         int nextId = nodePtr->shmidNext;
         proToNetqueue* tmpAddr = nodePtr;
         //该指针指向下一块共享内存
+        if (nextId == 0) 
+        {
+            break;
+        }
         nodePtr = static_cast<proToNetqueue *> (ShmManage::At(nextId, nullptr, 0));
         //解除该节点的内存映射
         ShmManage::Dt(tmpAddr);
     }
 }
 
-int NetComm::isThereConn(const char* ip, int port, const RoutingTable& str) 
+int NetComm::isThereConn(const char* ip, int port) 
 {
     int nextNode = netListHead_Addr->shmidNext;
     if (nextNode == 0) 
@@ -215,10 +214,10 @@ int NetComm::isThereConn(const char* ip, int port, const RoutingTable& str)
     RoutingTable* nodePtr = static_cast<RoutingTable *> (ShmManage::At(nextNode, nullptr, 0));
 
     int connfd = -1;
-    while (nodePtr == (void *)-1) 
+    while (1)
     {
-        if ((strcmp(ip, nodePtr->destIp) == 0) && 
-            port == nodePtr->destPort) 
+        if ((strcmp(ip, nodePtr->IP) == 0) && 
+            port == nodePtr->port) 
         {
             connfd = nodePtr->sockfd;   //找到一条已有连接
             break;
@@ -226,6 +225,10 @@ int NetComm::isThereConn(const char* ip, int port, const RoutingTable& str)
 
         int nextId = nodePtr->shmidNext;
         RoutingTable* tmpAddr = nodePtr;
+        if (nextId == 0) 
+        {
+            break;
+        }
         nodePtr = static_cast<RoutingTable *> (ShmManage::At(nextId, nullptr, 0));
         ShmManage::Dt(tmpAddr);
     }
@@ -249,17 +252,22 @@ int NetComm::getProShmQueue(const char* ip, int port, int flag)
     proToNetqueue* nodePtr = static_cast<proToNetqueue *> (ShmManage::At(nextNodeId, nullptr, 0));
 
     int queueID = -1;
-    while (nodePtr != (void *)-1) 
+    while (1)
     {
         if (nodePtr->destPort == port && (strcmp(nodePtr->destIP, ip) == 0)) 
         {
-            queueID = (flag & READ) ? nodePtr->readQueue : nodePtr->writeQueue;
+            // queueID = (flag & READ) ? nodePtr->readQueue : nodePtr->writeQueue;
+            queueID = nodePtr->shmSelfId;
             break;
         }
 
         proToNetqueue* tmpAddr = nodePtr;
         nextNodeId = nodePtr->shmidNext;
         ShmManage::Dt(tmpAddr);
+        if (nextNodeId == 0) 
+        {
+            break;
+        }
         nodePtr = static_cast<proToNetqueue *> (ShmManage::At(nextNodeId, nullptr, 0));
     }
 
@@ -281,6 +289,7 @@ void NetComm::runMyEpoll()
 
     signal(SIGPIPE, SIG_IGN);   //忽略sigpipe
     
+    //可读sockfd集合
     std::vector<int> readableSocket;
     readableSocket.clear();
     while (isRun) 
@@ -288,20 +297,12 @@ void NetComm::runMyEpoll()
         readableSocket = myEpoll.Wait();
         if (!readableSocket.empty()) 
         {
-            
+            for_each (readableSocket.begin(), readableSocket.end(), [=](int connfd){
+                std::thread t(&NetComm::recvFrom, this, connfd);
+                t.detach();
+            });
         }
     }
-}
-
-void NetComm::recvFrom(int connfd) 
-{
-    int offset = 0;
-    PacketBody tmpBuffer;
-    memset(&tmpBuffer, 0, sizeof(PacketBody));
-    //先收包头
-    offset = getMessage(connfd, (void *)(&tmpBuffer + offset), 12);
-    //再收包体
-    getMessage(connfd, (void *)(&tmpBuffer + offset), tmpBuffer.head.bodySzie);
 }
 
 int NetComm::getMessage(int connfd, void* buffer, int length) 
@@ -321,7 +322,7 @@ int NetComm::getMessage(int connfd, void* buffer, int length)
             else 
             { 
                 perror("recv is wrong");
-                break;
+                exit(1);
             }
         }
         if (ret == 0) 
@@ -332,4 +333,65 @@ int NetComm::getMessage(int connfd, void* buffer, int length)
         }
     }
     return count;
+}
+
+void NetComm::saveMessage(int shmid, const PacketBody& str) 
+{
+    proToNetqueue* tmpAddr = static_cast<proToNetqueue *> (ShmManage::At(shmid, nullptr, 0));
+
+    int front = tmpAddr->netQueue[READ][0];
+    int rear = tmpAddr->netQueue[WRITE][0];
+
+    //队列满 抛弃数据
+    if ((rear + 1) % QUEUESIZE == front) 
+    {
+        return ;
+    }
+    
+    PacketBody* queueAddr = (static_cast<PacketBody *> (ShmManage::At(tmpAddr->readQueue, nullptr, 0) + rear));
+    copy(queueAddr, str);
+ 
+    tmpAddr->netQueue[READ][0]++;
+}
+
+//将收到的数据写入共享内存缓冲区
+void NetComm::copy(PacketBody* ptr, const PacketBody& str) 
+{
+    ptr->head.type = str.head.type;
+    strcmp(ptr->buffer, str.buffer);
+    ptr->head.bodySzie = str.head.bodySzie;
+    ptr->netQuaad.destPort = str.netQuaad.sourcePort;
+    ptr->netQuaad.sourcePort = str.netQuaad.destPort;
+    strcmp(ptr->netQuaad.sourceIP, str.netQuaad.destIP);
+    strcmp(ptr->netQuaad.destIP, str.netQuaad.sourceIP);
+}
+
+void NetComm::recvFrom(int connfd) 
+{
+    int offset = 0;
+    PacketBody tmpBuffer;
+    memset(&tmpBuffer, 0, sizeof(PacketBody));
+    //先收包头
+    offset = getMessage(connfd, (void *)(&tmpBuffer + offset), 12);
+    //再收包体
+    getMessage(connfd, (void *)(&tmpBuffer + offset), tmpBuffer.head.bodySzie);
+    
+    //获取接收此消息的共享内存缓冲区(proToNetqueue)
+    int proShmid = getProShmQueue(tmpBuffer.netQuaad.destIP, tmpBuffer.netQuaad.destPort, WRITE); 
+    if (proShmid == -1) 
+    {
+        //如果没有该缓冲区,创建一个
+        proShmid = updateList(tmpBuffer.netQuaad);
+    }
+
+    //shmid中获取写队列 写入数据 
+    saveMessage(proShmid, tmpBuffer);
+
+    //若是一个新的连接 更新路由表
+    int netShmid = isThereConn(tmpBuffer.netQuaad.destIP, tmpBuffer.netQuaad.destPort);
+    if (netShmid == -1) 
+    {
+        //路由表中没有这个链接,将发送端ip和端口保存
+        updateList(connfd, tmpBuffer.netQuaad.sourceIP, tmpBuffer.netQuaad.sourcePort);    
+    }
 }

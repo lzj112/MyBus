@@ -18,8 +18,11 @@ int main()
     void* ptr = station.getLocalQueue(cardPtr, 0);
 
     char p[256];
-    station.recvFromLocal(cardPtr, ptr, p, 256);
-
-    cout << "here is message from local:\n [" << p << "]" << endl;
     
+    while (1)
+    {
+        station.recvFromLocal(cardPtr, ptr, p, 256);
+
+        cout << "here is message from local:\n [" << p << "]" << endl;
+    }
 }

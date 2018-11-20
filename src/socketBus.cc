@@ -3,6 +3,6 @@
 void socketBus::startListening(const char* ip, int port) 
 {
     initSocketfd();
-    Bind(port, ip);
+    Bind(ip, port);
     Listen(10);
 }
