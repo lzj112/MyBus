@@ -11,8 +11,8 @@
 #include <vector>
 #include <thread>
 
+#include "Epoll.h"
 #include "BusInfo.h"
-#include <Epoll.h>
 #include "socketBus.h"
 
 class NetComm 
@@ -42,6 +42,8 @@ public:
     int getMessage(int connfd, void* buffer, int length);
     void saveMessage(int shmid, const PacketBody& str);
     void copy(PacketBody* ptr, const PacketBody& str);
+    void dealData(int connfd, const PacketBody& tmpbuffer);
+    void forwarding(int connfd, const PacketBody& str);
 
     Epoll myEpoll;
     socketBus socketControl;    //socket TCP连接

@@ -1,10 +1,12 @@
 all : write read
 .PHONY : clean
 
+str = MyBus.* ShmManage.* socketBus.*  socketTCP.* Epoll.* NetComm.*
+
 write : testWrite.o
-	g++ testWrite.cpp MyBus.h MyBus.cc ShmManage.h ShmManage.cc socketTCP.h socketTCP.cc-o write
+	g++ testWrite.cpp $(str) -o write -lpthread
 
 read : testRead.o
-	g++ testRead.cpp MyBus.h MyBus.cc ShmManage.h ShmManage.cc socketTCP.h socketTCP.cc -o read
+	g++ testRead.cpp $(str) -o read -lpthread
 clean : 
-	rm *.o
+	rm *.o *.gch

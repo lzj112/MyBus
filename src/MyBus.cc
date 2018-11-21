@@ -48,24 +48,8 @@ key_t MyBus::getKey(int proj_id, char *in_case_path)
     return keyTmp;
 }
 
-/*
-void MyBus::initShmPlane() 
-{
-    plane.initList();
-} 
 
-void MyBus::initPlaneSocket(const char* ip, int port) 
-{
-    if (ip == nullptr) 
-    {
-        std::cout << "ip == nullptr in initplanesocket" << std::endl;
-        return ;
-    }
-    plane.socketControl.startListening(ip, port);
-}
-*/
-
-BusCard* MyBus::initChannelControl(int proj_id) 
+BusCard* MyBus::initChannelControl(int proj_id, const char* ip, int port) 
 {
     key_t key = getKey(proj_id);
     //开辟存储控制块的共享内存
@@ -79,9 +63,11 @@ BusCard* MyBus::initChannelControl(int proj_id)
     cardPtr->ftokKey = key;
     cardPtr->localQueue[0][2] = (int)getpid();
     
-    //初始化两个通信通道
+    //初始化通信通道
     initShmQueue(cardPtr);
 
+    //初始化socket
+    prepareSocket(ip, port);
     return cardPtr;
 }
 
@@ -99,17 +85,19 @@ int MyBus::initShmQueue(BusCard* card)
         return -1;
     }
 
-    for (int i = 0; i < 2; i++) 
+    for (int i = 0; i < 3; i++) 
     {
         int keyTmp = (card->ftokKey >> 16) + i;  //防止重复
         int key_ = getKey(keyTmp);
     
         int shmid = ShmManage::Get(keyTmp, sizeof(PacketBody) * QUEUESIZE, IPC_CREAT | 0666);
-        
+        if (i == 2) 
+        {
+            card->netQueue[0] = shmid;
+            continue;
+        }
         card->localQueue[0][i] = shmid; //存储两个队列的shmid
         
-        shmid = 0;
-        keyTmp = 0;
     }
     return 0;
 }
@@ -139,12 +127,6 @@ void* MyBus::getLocalQueue(BusCard* cardPtr, int flag) //flag=0期望读队列,=
     return ShmManage::At(shmid, nullptr, 0);
 }
 
-/*
-int MyBus::getListenFd() 
-{
-    return plane.socketControl.getMysockfd();
-}
-*/
 
 void MyBus::prepareSocket(const char* ip, int port) 
 {
@@ -205,18 +187,20 @@ int MyBus::addQueueFront(BusCard* cardPtr, int flag)
     int pid = (int)getpid();
     if (pid == cardPtr->localQueue[0][2]) //是创建队列的进程
     {
-        ++cardPtr->localQueue[1][flag];
+        cardPtr->localQueue[1][flag] = (cardPtr->localQueue[1][flag] + 1) % QUEUESIZE;
     }
     else 
     {
         //不是本机进程,队列相反
-        if (flag == 0) 
+        if (flag == READ) 
         {
-            ++cardPtr->localQueue[1][1];    //对端读队列尾指针++
+            //对端读队列头指针++
+            cardPtr->localQueue[1][1] = (cardPtr->localQueue[1][1] + 1) % QUEUESIZE;
         }
         else 
         {
-            ++cardPtr->localQueue[1][0];    //对端写队列尾指针++
+            //对端写队列头指针++
+            cardPtr->localQueue[1][0] = (cardPtr->localQueue[1][0] + 1) % QUEUESIZE;
         }
     }
     return 1;
@@ -232,18 +216,18 @@ int MyBus::addQueueRear(BusCard* cardPtr, int flag)
     int pid = (int)getpid();
     if (pid == cardPtr->localQueue[0][2]) //是创建队列的进程
     {
-        ++cardPtr->localQueue[2][flag];
+        cardPtr->localQueue[2][flag] = (cardPtr->localQueue[2][flag] + 1) % QUEUESIZE;
     }
     else 
     {
         //不是本机进程,队列相反
-        if (flag == 0) 
+        if (flag == READ) 
         {
-            ++cardPtr->localQueue[2][1];
+            cardPtr->localQueue[2][1] = (cardPtr->localQueue[2][1] + 1) % QUEUESIZE;
         }
         else 
         {
-            ++cardPtr->localQueue[2][0];
+            cardPtr->localQueue[2][0] = (cardPtr->localQueue[2][0] + 1) % QUEUESIZE;
         }
     }
     return 1;
@@ -279,7 +263,7 @@ char* MyBus::getLocalIP()
     }
 }
 
-int MyBus::sendToLocal(BusCard* cardPtr, void* shmMapAddr, const char* buffer, int length) 
+int MyBus::sendToLocal(BusCard* cardPtr, const char* buffer, int length) 
 {
     if (cardPtr == nullptr) 
     {
@@ -294,13 +278,13 @@ int MyBus::sendToLocal(BusCard* cardPtr, void* shmMapAddr, const char* buffer, i
         queueFront = getQueueFront(cardPtr, WRITE); 
         queueRear = getQueueRear(cardPtr, WRITE);
     }
-    if ((queueRear + 1) % QUEUESIZE == queueFront) //队列满,牺牲了队列中一个元素保持控来判断队满
+    if ((queueRear + 1) % QUEUESIZE == queueFront) //队列满,牺牲了队列中一个元素保持空来判断队满
     {
         std::cout << "sendtolocal 2" << std::endl;
         return -1;
     }
     
-    PacketBody* destPtr = (static_cast<PacketBody *> (shmMapAddr) + queueRear);
+    PacketBody* destPtr = (static_cast<PacketBody *> (getLocalQueue(cardPtr, WRITE))) + queueRear;
     if (length >= PacketBodyBufferSize) 
     {
         std::cout << "sendtolocal 3" << std::endl;
@@ -311,12 +295,12 @@ int MyBus::sendToLocal(BusCard* cardPtr, void* shmMapAddr, const char* buffer, i
 
     {
         std::lock_guard<std::mutex> locker(my_lock);
-        addQueueRear(cardPtr, 1);   //移动队尾指针
+        addQueueRear(cardPtr, WRITE);   //移动队尾指针
     }
-
+    ShmManage::Dt(destPtr);
 }
 
-int MyBus::recvFromLocal(BusCard* cardPtr, void* shmMadAddr, char* buffer, int length) 
+int MyBus::recvFromLocal(BusCard* cardPtr, char* buffer, int length) 
 {
     if (cardPtr == nullptr) 
     {
@@ -330,6 +314,7 @@ int MyBus::recvFromLocal(BusCard* cardPtr, void* shmMadAddr, char* buffer, int l
         std::lock_guard<std::mutex> locker(my_lock);
         queueFront = getQueueFront(cardPtr, READ); 
         queueRear = getQueueRear(cardPtr, READ);
+        std::cout << "before " << queueFront << ' ' << queueRear;
     }
     if (queueFront == queueRear) //queue is empty
     {
@@ -337,17 +322,59 @@ int MyBus::recvFromLocal(BusCard* cardPtr, void* shmMadAddr, char* buffer, int l
         return -1;
     }
 
-    PacketBody* sourcePtr = (static_cast<PacketBody *> (shmMadAddr) + queueFront);
+    PacketBody* sourcePtr = (static_cast<PacketBody *> (getLocalQueue(cardPtr, READ))) + queueFront;
     strncpy(buffer, (sourcePtr + queueFront)->buffer, length);
 
     {
         std::lock_guard<std::mutex> locker(my_lock);    
-        addQueueFront(cardPtr, 1);  //移动队头指针
+        addQueueFront(cardPtr, READ);  //移动队头指针
+
     }
+    ShmManage::Dt(sourcePtr);
 }
 
-int MyBus::sendByNetwork(int shmid, const char* passIP, int passPort,
-                        const char* destIP, int destPort, const char* buffer)
+void MyBus::saveLocalMessage(BusCard* card, const char* buffer) 
 {
+    if (card == nullptr) 
+    {
+        std::cout << "sendtolocal 1" << std::endl;
+        return ;
+    }
 
+    int queueFront = card->netQueue[1];
+    int queueRear = card->netQueue[2];
+    
+    if ((queueRear + 1) % QUEUESIZE == queueFront) //队列满,牺牲了队列中一个元素保持空来判断队满
+    {
+        std::cout << "snetqueue is full" << std::endl;
+        return ;
+    }
+    
+    PacketBody* destPtr = (static_cast<PacketBody *> (ShmManage::At(card->netQueue[0], nullptr, 0))) + queueRear;
+    
+    strcpy(destPtr->buffer, buffer);
+
+    card->netQueue[2] = (card->netQueue[2] + 1) % QUEUESIZE; 
+
+    ShmManage::Dt(destPtr);
+}
+
+
+int MyBus::sendByNetwork(BusCard* card, const char* passIP, int passPort,int sourcePort, 
+                        const char* destIP, int destPort, const char* p, int length)
+{
+    //存储进共享内存发送缓冲区
+    saveLocalMessage(card, p);
+
+    Notice tmp;
+    tmp.head.type = READY;
+    const char* sourceIP = getLocalIP();
+    strcmp(tmp.netQueaad.sourceIP, sourceIP);
+    strcmp(tmp.netQueaad.destIP, destIP);
+    tmp.netQueaad.destPort = destPort;
+    tmp.netQueaad.sourcePort = sourcePort;
+    tmp.shmid = card->netQueue[0];
+
+    //向中转进程发送通知
+    socketControl.sendTo(destIP, destPort, tmp);
 }

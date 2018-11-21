@@ -256,7 +256,7 @@ int NetComm::getProShmQueue(const char* ip, int port, int flag)
     {
         if (nodePtr->destPort == port && (strcmp(nodePtr->destIP, ip) == 0)) 
         {
-            // queueID = (flag & READ) ? nodePtr->readQueue : nodePtr->writeQueue;
+            // queueID = (flag == READ) ? nodePtr->readQueue : nodePtr->writeQueue;
             queueID = nodePtr->shmSelfId;
             break;
         }
@@ -348,7 +348,7 @@ void NetComm::saveMessage(int shmid, const PacketBody& str)
         return ;
     }
     
-    PacketBody* queueAddr = (static_cast<PacketBody *> (ShmManage::At(tmpAddr->readQueue, nullptr, 0) + rear));
+    PacketBody* queueAddr = (static_cast<PacketBody *> (ShmManage::At(tmpAddr->readQueue, nullptr, 0))) + rear;
     copy(queueAddr, str);
  
     tmpAddr->netQueue[READ][0]++;
@@ -373,9 +373,20 @@ void NetComm::recvFrom(int connfd)
     memset(&tmpBuffer, 0, sizeof(PacketBody));
     //先收包头
     offset = getMessage(connfd, (void *)(&tmpBuffer + offset), 12);
+    if (tmpBuffer.head.type == READY) 
+    {
+        //是本机发来的
+        forwarding(connfd, tmpBuffer);
+    }
     //再收包体
     getMessage(connfd, (void *)(&tmpBuffer + offset), tmpBuffer.head.bodySzie);
     
+    //处理数据
+    dealData(connfd, tmpBuffer);
+}
+
+void NetComm::dealData(int connfd, const PacketBody& tmpBuffer) 
+{
     //获取接收此消息的共享内存缓冲区(proToNetqueue)
     int proShmid = getProShmQueue(tmpBuffer.netQuaad.destIP, tmpBuffer.netQuaad.destPort, WRITE); 
     if (proShmid == -1) 
@@ -394,4 +405,8 @@ void NetComm::recvFrom(int connfd)
         //路由表中没有这个链接,将发送端ip和端口保存
         updateList(connfd, tmpBuffer.netQuaad.sourceIP, tmpBuffer.netQuaad.sourcePort);    
     }
+}
+void NetComm::forwarding(int connfd) 
+{
+
 }

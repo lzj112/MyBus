@@ -2,13 +2,14 @@
 #define _SOCKETBUS_H
 
 #include "socketTCP.h"
+#include "BusInfo.h"
 
 class socketBus : public socketTCP 
 {
 public:
     void startListening(const char* ip, int port);
-    int sendTo();
-    int recvFrom();
+    int sendTo(const char* ip, int port, Notice buffer);
+    // int recvFrom();
 };  
 
 #endif

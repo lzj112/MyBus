@@ -35,8 +35,9 @@ public:
     int Close(int fd);
     int Shutdown(int fd, int how);
     
-    virtual int sendTo() = 0;
-    virtual int recvFrom() = 0;
+    
+    // virtual int sendTo() = 0;
+    // virtual int recvFrom() = 0;
 
 private:
     int my_sockfd;

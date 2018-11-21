@@ -10,6 +10,7 @@
 
 #define READ 0
 #define WRITE 1
+#define READY 3
 #define PATH "/home/lzj/MyBus"
 #define QUEUESIZE 256
 #define PacketBodyBufferSize 256
@@ -24,12 +25,20 @@ struct BusCard
     key_t ftokKey;             //ftok的key
     int shmSelfId;             //本身这块共享内存的id
     int localQueue[3][3];      //本机通信队列
-    // int netQueue[3][2];        //跨机通信队列
+    int netQueue[3];           //跨机队列,发送缓冲区
 };
 
 
-//进程间通信的结构
+//进程间通信需要的地址
+struct ProComm 
+{
+    char sourceIP[8];
+    int sourcePort;
+    int destPort;
+    char destIP[8];
+};
 
+//进程间通信的结构
 struct PacketHead  
 {
     int type;
@@ -44,13 +53,12 @@ struct PacketBody
     char buffer[256];
 };
 
-//进程间通信需要的地址
-struct ProComm 
+//通知中转进程
+struct Notice 
 {
-    char sourceIP[8];
-    int sourcePort;
-    int destPort;
-    char destIP[8];
+    struct PacketHead head;
+    struct ProComm netQueaad;
+    int shmid;
 };
 
 //路由表
