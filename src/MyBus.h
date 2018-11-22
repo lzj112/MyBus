@@ -39,7 +39,7 @@ class MyBus
     int sendByNetwork(BusCard* card, const char* passIP, int passPort, int sourcePort, 
                       const char* destIP, int destPort, const char* buffer, int length);
     int recvFromNetwork(int shmid, const char* buffer);
-    void saveLocalMessage(BusCard* card, const char* buffer);
+    int saveLocalMessage(BusCard* card, const char* buffer);
 
   private:
     char* getPath(char *buffer, size_t size);                //使用ftok创建key

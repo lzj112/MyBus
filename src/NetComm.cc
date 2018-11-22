@@ -305,6 +305,7 @@ void NetComm::runMyEpoll()
     }
 }
 
+//接收消息
 int NetComm::getMessage(int connfd, void* buffer, int length) 
 {
     int count = 0;
@@ -327,7 +328,8 @@ int NetComm::getMessage(int connfd, void* buffer, int length)
         }
         if (ret == 0) 
         {
-            myEpoll.Ctl(connfd, EPOLL_CTL_DEL);
+            // myEpoll.Ctl(connfd, EPOLL_CTL_DEL);
+            myEpoll.Del(connfd);
             close(connfd);
             break;
         }
@@ -335,6 +337,7 @@ int NetComm::getMessage(int connfd, void* buffer, int length)
     return count;
 }
 
+//将消息存入共享内存
 void NetComm::saveMessage(int shmid, const PacketBody& str) 
 {
     proToNetqueue* tmpAddr = static_cast<proToNetqueue *> (ShmManage::At(shmid, nullptr, 0));
@@ -366,6 +369,22 @@ void NetComm::copy(PacketBody* ptr, const PacketBody& str)
     strcmp(ptr->netQuaad.destIP, str.netQuaad.sourceIP);
 }
 
+void NetComm::copy(PacketBody& str, Notice& tmp) 
+{
+    int shmid = tmp.shmid;
+    PacketBody* tmpAddr = static_cast<PacketBody *> (ShmManage::At(shmid, nullptr, 0));
+
+    strcpy(str.buffer, tmpAddr->buffer);
+    str.head.type = READY >> 1 + 12;
+    strcmp(str.netQuaad.destIP, tmp.netQueaad.destIP);
+    strcmp(str.netQuaad.sourceIP, str.netQuaad.sourceIP);
+    str = 
+    {
+        .netQuaad.destPort = tmp.netQueaad.destPort,
+        .netQuaad.sourcePort = tmp.netQueaad.sourcePort
+    };
+}
+
 void NetComm::recvFrom(int connfd) 
 {
     int offset = 0;
@@ -378,11 +397,14 @@ void NetComm::recvFrom(int connfd)
         //是本机发来的
         forwarding(connfd, tmpBuffer);
     }
-    //再收包体
-    getMessage(connfd, (void *)(&tmpBuffer + offset), tmpBuffer.head.bodySzie);
-    
-    //处理数据
-    dealData(connfd, tmpBuffer);
+    else    //是接收其他物理机发来的数据
+    {
+        //再收包体
+        getMessage(connfd, (void *)(&tmpBuffer + offset), tmpBuffer.head.bodySzie);
+
+        //处理数据
+        dealData(connfd, tmpBuffer);
+    }
 }
 
 void NetComm::dealData(int connfd, const PacketBody& tmpBuffer) 
@@ -406,7 +428,15 @@ void NetComm::dealData(int connfd, const PacketBody& tmpBuffer)
         updateList(connfd, tmpBuffer.netQuaad.sourceIP, tmpBuffer.netQuaad.sourcePort);    
     }
 }
-void NetComm::forwarding(int connfd) 
+void NetComm::forwarding(int connfd, const PacketBody& str)  
 {
+    Notice buffer;
+    memset(&buffer, 0, sizeof(buffer));
 
+    //读取通知包里的其余信息
+    getMessage(connfd, (&buffer + 12), (sizeof(Notice) - 12));
+
+    PacketBody tmp;
+    copy(tmp, buffer);
+    // socketControl.sendTo(buffer);
 }

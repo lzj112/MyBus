@@ -42,6 +42,7 @@ public:
     int getMessage(int connfd, void* buffer, int length);
     void saveMessage(int shmid, const PacketBody& str);
     void copy(PacketBody* ptr, const PacketBody& str);
+    void copy(PacketBody& str, Notice& tmp);
     void dealData(int connfd, const PacketBody& tmpbuffer);
     void forwarding(int connfd, const PacketBody& str);
 

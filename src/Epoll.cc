@@ -22,18 +22,25 @@ void Epoll::Create(int fd)
     listenFd = fd;
     setNonblock(listenFd);
 
-    Ctl(listenFd, EPOLL_CTL_ADD);
+    Add(listenFd, EPOLLIN);
 }
 
-void Epoll::Ctl(int fd, int op) 
+void Epoll::Add(int fd, int op) 
 {
     epoll_event ev;
     memset(&ev, 0, sizeof(ev));
     ev.data.fd = fd;
-    ev.events = EPOLLIN | EPOLLET;
-    epoll_ctl(epollFd, op, fd, &ev);
+    ev.events = op | EPOLLET;
+    epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &ev);
 }
 
+void Epoll::Del(int fd) 
+{
+    epoll_event ev;
+    memset(&ev, 0, sizeof(ev));
+    ev.data.fd = fd;
+    epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, &ev);
+}
 
 int Epoll::newConnect(int listenFd) 
 {
@@ -52,7 +59,7 @@ int Epoll::newConnect(int listenFd)
             break;
         }
         setNonblock(connfd);  //设置为非阻塞
-        Ctl(connfd, EPOLL_CTL_ADD); //将新的连接socketfd添加到合集
+        Add(connfd, EPOLLIN);       //将新的连接socketfd添加到合集
     }
     if (connfd == -1) 
     {

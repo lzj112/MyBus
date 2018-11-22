@@ -20,7 +20,10 @@ public:
     }
     void setNonblock(int fd);   
     void Create(int fd);
-    void Ctl(int fd, int op);
+    // void Ctl(int fd, int op);
+    void Add(int fd, int op);    
+    void Del(int fd);
+    void Mod(int fd);
     
     int newConnect(int listenFd);
     

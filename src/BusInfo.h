@@ -59,6 +59,7 @@ struct Notice
     struct PacketHead head;
     struct ProComm netQueaad;
     int shmid;
+    int front;
 };
 
 //路由表

@@ -333,7 +333,7 @@ int MyBus::recvFromLocal(BusCard* cardPtr, char* buffer, int length)
     ShmManage::Dt(sourcePtr);
 }
 
-void MyBus::saveLocalMessage(BusCard* card, const char* buffer) 
+int MyBus::saveLocalMessage(BusCard* card, const char* buffer) 
 {
     if (card == nullptr) 
     {
@@ -357,6 +357,8 @@ void MyBus::saveLocalMessage(BusCard* card, const char* buffer)
     card->netQueue[2] = (card->netQueue[2] + 1) % QUEUESIZE; 
 
     ShmManage::Dt(destPtr);
+
+    return queueFront;
 }
 
 
@@ -364,7 +366,7 @@ int MyBus::sendByNetwork(BusCard* card, const char* passIP, int passPort,int sou
                         const char* destIP, int destPort, const char* p, int length)
 {
     //存储进共享内存发送缓冲区
-    saveLocalMessage(card, p);
+    int front = saveLocalMessage(card, p);
 
     Notice tmp;
     tmp.head.type = READY;
@@ -374,6 +376,7 @@ int MyBus::sendByNetwork(BusCard* card, const char* passIP, int passPort,int sou
     tmp.netQueaad.destPort = destPort;
     tmp.netQueaad.sourcePort = sourcePort;
     tmp.shmid = card->netQueue[0];
+    tmp.front = front;
 
     //向中转进程发送通知
     socketControl.sendTo(destIP, destPort, tmp);
