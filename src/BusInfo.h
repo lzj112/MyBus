@@ -58,8 +58,7 @@ struct Notice
 {
     struct PacketHead head;
     struct ProComm netQueaad;
-    int shmid;
-    int front;
+    int shmid;      //buscard的shmid
 };
 
 //路由表

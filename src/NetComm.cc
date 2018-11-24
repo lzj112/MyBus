@@ -369,12 +369,9 @@ void NetComm::copy(PacketBody* ptr, const PacketBody& str)
     strcmp(ptr->netQuaad.destIP, str.netQuaad.sourceIP);
 }
 
+//将共享内存中的数据拿出来发给另一个物理机
 void NetComm::copy(PacketBody& str, Notice& tmp) 
 {
-    int shmid = tmp.shmid;
-    PacketBody* tmpAddr = static_cast<PacketBody *> (ShmManage::At(shmid, nullptr, 0));
-
-    strcpy(str.buffer, tmpAddr->buffer);
     str.head.type = READY >> 1 + 12;
     strcmp(str.netQuaad.destIP, tmp.netQueaad.destIP);
     strcmp(str.netQuaad.sourceIP, str.netQuaad.sourceIP);
@@ -383,6 +380,17 @@ void NetComm::copy(PacketBody& str, Notice& tmp)
         .netQuaad.destPort = tmp.netQueaad.destPort,
         .netQuaad.sourcePort = tmp.netQueaad.sourcePort
     };
+
+    BusCard* tmpAddr1 = static_cast<BusCard *> (ShmManage::At(tmp.shmid, nullptr, 0));
+    if (tmpAddr1->netQueue[1] != tmpAddr1->netQueue[2])
+    {
+        PacketBody* tmpAddr2 = static_cast<PacketBody *> (ShmManage::At(tmpAddr1->netQueue[0], nullptr, 0));
+        strcpy(str.buffer, tmpAddr2->buffer);
+        tmpAddr1->netQueue[1]++;
+        
+        ShmManage::Dt(tmpAddr1);
+        ShmManage::Dt(tmpAddr2);
+    }
 }
 
 void NetComm::recvFrom(int connfd) 
@@ -394,7 +402,7 @@ void NetComm::recvFrom(int connfd)
     offset = getMessage(connfd, (void *)(&tmpBuffer + offset), 12);
     if (tmpBuffer.head.type == READY) 
     {
-        //是本机发来的
+        //是本机发来的,转发给其他物理机
         forwarding(connfd, tmpBuffer);
     }
     else    //是接收其他物理机发来的数据
@@ -436,7 +444,8 @@ void NetComm::forwarding(int connfd, const PacketBody& str)
     //读取通知包里的其余信息
     getMessage(connfd, (&buffer + 12), (sizeof(Notice) - 12));
 
+    //从共享内存中获取本机进程存入的buffer, 发往另一个物理机
     PacketBody tmp;
     copy(tmp, buffer);
-    // socketControl.sendTo(buffer);
+    socketControl.sendTo(tmp);
 }

@@ -36,10 +36,11 @@ class MyBus
     char* getLocalIP();
     int sendToLocal(BusCard* cardPtr, const char* buffer, int length);    //收发数据
     int recvFromLocal(BusCard* cardPtr, char* buffer, int length);
-    int sendByNetwork(BusCard* card, const char* passIP, int passPort, int sourcePort, 
-                      const char* destIP, int destPort, const char* buffer, int length);
+    int sendByNetwork(BusCard* card, const char* passIP, int passPort, const char* destPastIP, 
+                      int destPassPort, const struct ProComm& str, const char* buffer, int length);
     int recvFromNetwork(int shmid, const char* buffer);
-    int saveLocalMessage(BusCard* card, const char* buffer);
+    void saveLocalMessage(BusCard* card, const char* buffer);
+    int noRepeatPort();
 
   private:
     char* getPath(char *buffer, size_t size);                //使用ftok创建key

@@ -9,7 +9,7 @@
 using namespace std;
 
 //本机IP 端口
-// const char* sourceIP = "127.0.0.1";
+const char* sourceIP = "127.0.0.1";
 int sourcePort;
 
 //对端中转进程ip 端口
@@ -24,7 +24,7 @@ int main()
 {
 
     MyBus station;
-    BusCard* cardPtr = station.initChannelControl(10); //创建共享内存控制块及通信队列
+    BusCard* cardPtr = station.initChannelControl(10, sourceIP, sourcePort); //创建共享内存控制块及通信队列
 
 
     // //应该转换成package body类型把
@@ -42,7 +42,13 @@ int main()
     }
     
     //跨物理机发送
+    ProComm tmp;
+    strcmp(tmp.destIP, destIP);
+    strcmp(tmp.sourceIP, sourceIP);
+    tmp.destPort = destPort;
+    tmp.sourcePort = sourcePort;
     int ret = station.sendByNetwork(cardPtr, passIP, passport, sourcePort, 
                                     destIP, destPort, p, length);
-    
+    //还得提供对端中转进程的IP和端口
+
 }
