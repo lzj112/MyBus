@@ -16,13 +16,25 @@ void Epoll::setNonblock(int fd)
     fcntl(fd, F_SETFL, new_option);
 }
 
-void Epoll::Create(int fd) 
-{
-    epollFd = epoll_create(1); 
-    listenFd = fd;
-    setNonblock(listenFd);
+// void Epoll::Create(int fd) 
+// {
+//     epollFd = epoll_create(1); 
+//     listenFd = fd;
+//     setNonblock(listenFd);
 
-    Add(listenFd, EPOLLIN);
+//     Add(listenFd, EPOLLIN);
+// }
+
+void Epoll::Create(int fd, int flag) 
+{
+    if (flag == 0) 
+    {
+        listenFd = fd;
+    }
+    else 
+    {
+        udpfd = fd;
+    }
 }
 
 void Epoll::Add(int fd, int op) 
@@ -71,9 +83,10 @@ int Epoll::newConnect(int listenFd)
     return connfd;
 }
 
-
+/*
 std::vector<int> Epoll::epollET(int epollFd, epoll_event* events, int ret) 
 {
+    epoll_event events[FDNUMBER];
     std::vector<int> tmp;
     for (int i = 0; i < ret; i++)
     {
@@ -91,6 +104,10 @@ std::vector<int> Epoll::epollET(int epollFd, epoll_event* events, int ret)
                 // assignedTask(events[i].data.fd); //解析下载请求
                 
             }
+            else if (events[i].data.fd == udpfd) 
+            {
+                
+            }
         //     else    //定时器到期
         //     {
         //         uint64_t numExp;
@@ -104,10 +121,10 @@ std::vector<int> Epoll::epollET(int epollFd, epoll_event* events, int ret)
     }
     return tmp;
 }
+*/
 
-std::vector<int> Epoll::Wait() 
+epoll_event* Epoll::Wait(int& ret)
 {
-    int ret;
     ret = epoll_wait(epollFd, events, FDNUMBER, 0); //执行一次非阻塞检测
     if (ret == -1) 
     {
@@ -115,7 +132,7 @@ std::vector<int> Epoll::Wait()
         exit(1);
     }    
     
-    return epollET(epollFd, events, ret); 
+    return events;
 }
 
 

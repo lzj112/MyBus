@@ -1,5 +1,6 @@
 #include <fcntl.h>
 #include <assert.h>
+#include <memory.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -20,11 +21,13 @@ int socketTCP::setNonBlock(int fd)
 
 int socketTCP::initSocketfd(int domain, int type, int protocol) 
 {
-    this->my_sockfd = socket(domain, type, protocol);
-    if (my_sockfd == -1) 
+    if (type == SOCK_STREAM) 
     {
-        std::cout << "initSocketfd is failed" << std::endl;
-        return -1;
+        fdTCP = socket(domain, type, protocol);
+    }
+    else if (type == SOCK_DGRAM)
+    {
+        fdUDP = socket(domain, type, protocol);
     }
     return 0;
 }
@@ -38,23 +41,23 @@ int socketTCP::Bind(const char* ip, int port)
     }
 
     struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
     inet_pton(AF_INET, ip, &addr.sin_addr);
 
-    int res = bind(my_sockfd, (struct sockaddr*)&addr, sizeof(addr));
-    if (res == -1) 
-    {
-        std::cout << "Bind is failed" << std::endl;
-        return -1;
-    }
+    int res = bind(fdTCP, (struct sockaddr*)&addr, sizeof(addr));
+    assert(res != -1);
+
+    res = bind(fdUDP, (struct sockaddr*)&addr, sizeof(addr));
+    assert(res != -1);
     
     return 0;
 }
 
 int socketTCP::Listen(int backlog) 
 {
-    int res = listen(my_sockfd, backlog);
+    int res = listen(fdTCP, backlog);
     if (res == -1) 
     {
         std::cout << "Listen is failed" << std::endl;
@@ -69,12 +72,12 @@ int socketTCP::Connect(const char* ip, int port)
     addr.sin_port = htons(port);
     inet_pton(AF_INET, ip, &addr.sin_addr);
 
-    int res = connect(my_sockfd, (struct sockaddr*)&addr, sizeof(addr));
+    int res = connect(fdTCP, (struct sockaddr*)&addr, sizeof(addr));
     
     //失败后原来的不可再用了
     if (res == -1) 
     {
-        Close(my_sockfd);
+        Close(fdTCP);
         initSocketfd();
         return -1;
     }
@@ -84,13 +87,8 @@ int socketTCP::Connect(const char* ip, int port)
 
 int socketTCP::Accept() 
 {
-    if (my_sockfd == -1) 
-    {
-        return -1;
-    }
-
     //对对端的客户协议地址不感兴趣
-    int connfd = accept(my_sockfd, nullptr, nullptr);
+    int connfd = accept(fdTCP, nullptr, nullptr);
     if (connfd == -1) 
     {
         std::cout << "Accept is failed" << std::endl;

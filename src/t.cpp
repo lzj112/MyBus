@@ -19,15 +19,22 @@
 
 using namespace std;
 
+bool check()
+{
+    union t 
+    {
+        int a;
+        char b;
+    };
+    t tmp;
+    tmp.a = 0x12345678;
+    if (tmp.b == 0x78) 
+    {
+        cout << "little end" << endl;
+    }
+}
+
 int main() 
 {
-    int port;
-    do 
-    {
-        AllocPort tmp;
-        port = tmp.getPort();
-        cout << port << endl;
-    } while (port != 2048);
-
-
+    check();
 }

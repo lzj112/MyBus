@@ -9,7 +9,7 @@ class socketBus : public socketTCP
 public:
     void startListening(const char* ip, int port);
     int sendTo(const char* ip, int port, Notice buffer);
-    int sendTo(const PacketBody& str); 
+    int sendTo(const PacketBody& str, int connfd = -1); 
     int makeNewConn(const PacketBody& str);
     // int recvFrom();
 };  

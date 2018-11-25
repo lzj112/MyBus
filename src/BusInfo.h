@@ -24,8 +24,9 @@ struct BusCard
 {
     key_t ftokKey;             //ftok的key
     int shmSelfId;             //本身这块共享内存的id
+    int proChannelID;          //本机进程通道表节点shmid
     int localQueue[3][3];      //本机通信队列
-    int netQueue[3];           //跨机队列,发送缓冲区
+    int netQueue[3];           //跨机队列,发送缓冲区   
 };
 
 
@@ -79,8 +80,8 @@ struct proToNetqueue
     char destIP[8];
     int destPort;
     int readQueue;
-    int writeQueue;
-    int netQueue[2][2];        //进程通道的头尾指针
+    // int writeQueue;
+    int netQueue[2];        //进程通道的头尾指针
     
     int shmidNext;
 };

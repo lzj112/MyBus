@@ -12,7 +12,7 @@ const int MAXLEN = 10;
 class socketTCP 
 {
 public:
-    socketTCP() : my_sockfd(-1){}
+    socketTCP() : fdTCP(-1), fdUDP(-1){}
     virtual ~socketTCP() 
     {
         //要让中转进程显示close
@@ -24,7 +24,11 @@ public:
     }
     int getMysockfd() 
     {
-        return my_sockfd;
+        return fdTCP;
+    }
+    int getMysockfd(int) 
+    {
+        return fdUDP;
     }
     int setNonBlock(int fd);
     int initSocketfd(int domain = AF_INET, int type = SOCK_STREAM, int protocol = 0);
@@ -40,7 +44,8 @@ public:
     // virtual int recvFrom() = 0;
 
 private:
-    int my_sockfd;
+    int fdTCP;
+    int fdUDP;
 };
 
 #endif

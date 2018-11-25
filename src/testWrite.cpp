@@ -12,9 +12,13 @@ using namespace std;
 const char* sourceIP = "127.0.0.1";
 int sourcePort;
 
-//对端中转进程ip 端口
+//本机中转进程IP 端口
 const char* passIP = "127.0.0.1";
-int passport = 4096;
+int passPort;
+
+//对端中转进程ip 端口
+const char* destPassIP = "127.0.0.1";
+int destPassPort = 4096;
 
 //目标进程ip 端口
 const char* destIP = "127.0.0.1";
@@ -47,8 +51,8 @@ int main()
     strcmp(tmp.sourceIP, sourceIP);
     tmp.destPort = destPort;
     tmp.sourcePort = sourcePort;
-    int ret = station.sendByNetwork(cardPtr, passIP, passport, sourcePort, 
-                                    destIP, destPort, p, length);
+    int ret = station.sendByNetwork(cardPtr, passIP, passPort, destPassIP, destPassPort, 
+                                   tmp, p);
     //还得提供对端中转进程的IP和端口
 
 }

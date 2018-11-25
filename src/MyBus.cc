@@ -7,6 +7,10 @@
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <sys/types.h>
+
 
 #include <iostream>
 
@@ -53,11 +57,11 @@ BusCard* MyBus::initChannelControl(int proj_id, const char* ip, int port)
 {
     key_t key = getKey(proj_id);
     //开辟存储控制块的共享内存
-    int shmid = ShmManage::Get(key, sizeof(BusCard), IPC_CREAT | 0666);
+    int shmid = shmget(key, sizeof(BusCard), IPC_CREAT | 0666);
     std::cout << "Channel Control shm_id = " << shmid << std::endl;
 
     //挂载到当前进程
-    BusCard* cardPtr = static_cast<BusCard *> (ShmManage::At(shmid, nullptr, 0));
+    BusCard* cardPtr = static_cast<BusCard *> (shmat(shmid, nullptr, 0));
 
     cardPtr->shmSelfId = shmid;
     cardPtr->ftokKey = key;
@@ -74,7 +78,7 @@ BusCard* MyBus::initChannelControl(int proj_id, const char* ip, int port)
 BusCard* MyBus::getChannelControl(int shmid) 
 {
     //挂载到当前进程
-    return static_cast<BusCard *>(ShmManage::At(shmid, nullptr, 0));
+    return static_cast<BusCard *>(shmat(shmid, nullptr, 0));
 }
 
 
@@ -90,7 +94,7 @@ int MyBus::initShmQueue(BusCard* card)
         int keyTmp = (card->ftokKey >> 16) + i;  //防止重复
         int key_ = getKey(keyTmp);
     
-        int shmid = ShmManage::Get(keyTmp, sizeof(PacketBody) * QUEUESIZE, IPC_CREAT | 0666);
+        int shmid = shmget(keyTmp, sizeof(PacketBody) * QUEUESIZE, IPC_CREAT | 0666);
         if (i == 2) 
         {
             card->netQueue[0] = shmid;
@@ -124,7 +128,7 @@ void* MyBus::getLocalQueue(BusCard* cardPtr, int flag) //flag=0期望读队列,=
     }
     
     //将该队列挂载到当前进程
-    return ShmManage::At(shmid, nullptr, 0);
+    return shmat(shmid, nullptr, 0);
 }
 
 
@@ -297,7 +301,7 @@ int MyBus::sendToLocal(BusCard* cardPtr, const char* buffer, int length)
         std::lock_guard<std::mutex> locker(my_lock);
         addQueueRear(cardPtr, WRITE);   //移动队尾指针
     }
-    ShmManage::Dt(destPtr);
+    shmdt(destPtr);
 }
 
 int MyBus::recvFromLocal(BusCard* cardPtr, char* buffer, int length) 
@@ -330,7 +334,7 @@ int MyBus::recvFromLocal(BusCard* cardPtr, char* buffer, int length)
         addQueueFront(cardPtr, READ);  //移动队头指针
 
     }
-    ShmManage::Dt(sourcePtr);
+    shmdt(sourcePtr);
 }
 
 void MyBus::saveLocalMessage(BusCard* card, const char* buffer) 
@@ -350,19 +354,19 @@ void MyBus::saveLocalMessage(BusCard* card, const char* buffer)
         return ;
     }
     
-    PacketBody* destPtr = (static_cast<PacketBody *> (ShmManage::At(card->netQueue[0], nullptr, 0))) + queueRear;
+    PacketBody* destPtr = (static_cast<PacketBody *> (shmat(card->netQueue[0], nullptr, 0))) + queueRear;
     
     strcpy(destPtr->buffer, buffer);
 
     card->netQueue[2] = (card->netQueue[2] + 1) % QUEUESIZE; 
 
-    ShmManage::Dt(destPtr);
+    shmdt(destPtr);
 
 }
 
 
-int MyBus::sendByNetwork(BusCard* card, const char* passIP, int passPort,int sourcePort, 
-                        const char* destIP, int destPort, const char* p, int length)
+int MyBus::sendByNetwork(BusCard* card, const char* passIP, int passPort, const char* destPassIP, 
+                        int destPassPort, const ProComm& str, const char* p)
 {
     //存储进共享内存发送缓冲区
     saveLocalMessage(card, p);
@@ -371,13 +375,13 @@ int MyBus::sendByNetwork(BusCard* card, const char* passIP, int passPort,int sou
     tmp.head.type = READY;
     const char* sourceIP = getLocalIP();
     strcmp(tmp.netQueaad.sourceIP, sourceIP);
-    strcmp(tmp.netQueaad.destIP, destIP);
-    tmp.netQueaad.destPort = destPort;
-    tmp.netQueaad.sourcePort = sourcePort;
+    strcmp(tmp.netQueaad.destIP, str.destIP);
+    tmp.netQueaad.destPort = str.destPort;
+    tmp.netQueaad.sourcePort = str.sourcePort;
     tmp.shmid = card->shmSelfId;
     // tmp.front = card->netQueue[1];
     // tmp.rear = card->netQueue[2];
 
     //向中转进程发送通知
-    socketControl.sendTo(destIP, destPort, tmp);
+    socketControl.sendTo(str.destIP, str.destPort, tmp);
 }

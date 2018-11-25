@@ -34,17 +34,20 @@ public:
     int delListNode(const char* ip, int port, const proToNetqueue& str);
     int isThereConn(const char* ip, int port);
     int getProShmQueue(const char* ip, int port, int flag);
-    int getListenFd();
+    // int getListenFd();
+    // int getListenFd();
 
     //在这里运行epoll run,读取数据拿出来让NetComm做
     void runMyEpoll();
-    void recvFrom(int confd);
+    void recvFromTCP(int confd);
+    void recvFromUDP(int connfd);
     int getMessage(int connfd, void* buffer, int length);
     void saveMessage(int shmid, const PacketBody& str);
     void copy(PacketBody* ptr, const PacketBody& str);
-    void copy(PacketBody& str, Notice& tmp);
+    void copy(PacketBody& str, const Notice& tmp);
     void dealData(int connfd, const PacketBody& tmpbuffer);
-    void forwarding(int connfd, const PacketBody& str);
+    void forwarding(int connfd, const Notice& str);
+    void inform(const char* ip, int port, int id);
 
     Epoll myEpoll;
     socketBus socketControl;    //socket TCP连接
