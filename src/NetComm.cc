@@ -274,11 +274,6 @@ int NetComm::getProShmQueue(const char* ip, int port, int flag)
     return queueID;
 }
 
-// int NetComm::getListenFd() 
-// {
-//     int listeningFd = socketControl.getMysockfd();
-//     return listeningFd;
-// }
 
 void NetComm::runMyEpoll() 
 {

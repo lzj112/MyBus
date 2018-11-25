@@ -53,7 +53,7 @@ key_t MyBus::getKey(int proj_id, char *in_case_path)
 }
 
 
-BusCard* MyBus::initChannelControl(int proj_id, const char* ip, int port) 
+BusCard* MyBus::initChannelControl(int proj_id) 
 {
     key_t key = getKey(proj_id);
     //开辟存储控制块的共享内存
@@ -70,8 +70,6 @@ BusCard* MyBus::initChannelControl(int proj_id, const char* ip, int port)
     //初始化通信通道
     initShmQueue(cardPtr);
 
-    //初始化socket
-    prepareSocket(ip, port);
     return cardPtr;
 }
 
@@ -135,7 +133,7 @@ void* MyBus::getLocalQueue(BusCard* cardPtr, int flag) //flag=0期望读队列,=
 void MyBus::prepareSocket(const char* ip, int port) 
 {
     socketControl.initSocketfd();
-    socketControl.Bind(ip, port);
+    socketControl.startListening(ip, port);
 }
 
 int MyBus::getQueueFront(BusCard* cardPtr, int flag) 
@@ -384,4 +382,36 @@ int MyBus::sendByNetwork(BusCard* card, const char* passIP, int passPort, const 
 
     //向中转进程发送通知
     socketControl.sendTo(str.destIP, str.destPort, tmp);
+}
+
+int MyBus::recvFromNetwork(const char* passIP, int passPort, const char* buffer) 
+{
+    int buf;
+    int udpfd = socketControl.getMysockfd(1);
+    int ret = recvfrom(udpfd, (void *)&buf, sizeof(int), 0, nullptr, nullptr);
+    if (ret < 0) 
+    {
+        perror("recvfrom is wrong");
+        return -1;
+    }
+
+    proToNetqueue* tmpAddr = static_cast<proToNetqueue *> (shmat(buf, nullptr, 0));
+    if (tmpAddr == (void *)-1) 
+    {
+        perror("shmat in recvfrom");
+        return ;
+    }
+
+    //empty queue
+    if (tmpAddr->netQueue[0] == tmpAddr->netQueue[1]) 
+    {
+        return ;
+    }
+    else 
+    {
+        PacketBody* tmpBuf = static_cast<PacketBody *> (shmat(tmpAddr->readQueue, nullptr, 0));
+        strcmp(buffer, tmpBuf->buffer);
+        shmdt(tmpBuf);
+    }
+    shmdt(tmpAddr);
 }

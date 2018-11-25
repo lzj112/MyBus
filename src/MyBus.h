@@ -10,7 +10,6 @@
 
 #include "BusInfo.h"
 #include "NetComm.h"
-#include "ShmManage.h"
 
 
 /* 
@@ -23,7 +22,7 @@ class MyBus
     ~MyBus();
     
     key_t getKey(int proj_id, char* in_case_path = nullptr); //获得shmget的key
-    BusCard* initChannelControl(int proj_id, const char* ip, int port);                  //初始化控制块信息,以及两个队列
+    BusCard* initChannelControl(int proj_id);                  //初始化控制块信息,以及两个队列
     BusCard* getChannelControl(int shmid);                   //获得一个创建好的控制块信息
     int initProChannelNode(const BusCard* card, const char* ip, int port);
 
@@ -39,9 +38,8 @@ class MyBus
     int recvFromLocal(BusCard* cardPtr, char* buffer, int length);
     int sendByNetwork(BusCard* card, const char* passIP, int passPort, const char* destPastIP, 
                       int destPassPort, const struct ProComm& str, const char* buffer);
-    int recvFromNetwork(int shmid, const char* buffer);
+    int recvFromNetwork(const char* passIP, int passPort, const char* buffer);
     void saveLocalMessage(BusCard* card, const char* buffer);
-    int noRepeatPort();
 
   private:
     char* getPath(char *buffer, size_t size);                //使用ftok创建key
