@@ -377,8 +377,6 @@ int MyBus::sendByNetwork(BusCard* card, const char* passIP, int passPort, const 
     tmp.netQueaad.destPort = str.destPort;
     tmp.netQueaad.sourcePort = str.sourcePort;
     tmp.shmid = card->shmSelfId;
-    // tmp.front = card->netQueue[1];
-    // tmp.rear = card->netQueue[2];
 
     //向中转进程发送通知
     socketControl.sendTo(str.destIP, str.destPort, tmp);
@@ -399,19 +397,20 @@ int MyBus::recvFromNetwork(const char* passIP, int passPort, const char* buffer)
     if (tmpAddr == (void *)-1) 
     {
         perror("shmat in recvfrom");
-        return ;
+        return 0;
     }
 
     //empty queue
     if (tmpAddr->netQueue[0] == tmpAddr->netQueue[1]) 
     {
-        return ;
+        shmdt(tmpAddr);
     }
     else 
     {
         PacketBody* tmpBuf = static_cast<PacketBody *> (shmat(tmpAddr->readQueue, nullptr, 0));
         strcmp(buffer, tmpBuf->buffer);
+        tmpAddr->netQueue[0] = (tmpAddr->netQueue[0] + 1) % QUEUESIZE;
         shmdt(tmpBuf);
+        shmdt(tmpAddr);
     }
-    shmdt(tmpAddr);
 }

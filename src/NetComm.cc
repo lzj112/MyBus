@@ -11,7 +11,6 @@
 #include <algorithm>
 
 #include "NetComm.h"
-#include "ShmManage.h"
 
 void NetComm::initList() 
 {
@@ -288,11 +287,11 @@ void NetComm::runMyEpoll()
     signal(SIGPIPE, SIG_IGN);   //忽略sigpipe
     
     int ret;
-    epoll_event* events;
+    epoll_event events[FDNUMBER];
     while (isRun) 
     {
         ret = 0;
-        events = myEpoll.Wait(ret);
+        myEpoll.Wait(ret, events);
         for (int i = 0; i < ret; i++) 
         {
             if (events[i].data.fd == udpfd) 

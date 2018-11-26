@@ -1,13 +1,14 @@
-// #include <iostream>
+#include <iostream>
 
-#include "MyBus.h" 
+#include "NetComm.h"
+
 using namespace std;
 
 const char* ip = "127.0.0.1";
 int port = 4096;
+
 int main() 
 {
-    // MyBus station;
     NetComm plane;
 
     plane.initList();

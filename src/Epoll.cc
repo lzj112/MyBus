@@ -123,8 +123,10 @@ std::vector<int> Epoll::epollET(int epollFd, epoll_event* events, int ret)
 }
 */
 
-epoll_event* Epoll::Wait(int& ret)
+// epoll_event* Epoll::Wait(int& ret, epoll_event* events)
+void Epoll::Wait(int& ret, epoll_event* events)
 {
+    // epoll_event events[FDNUMBER];  //fd合集
     ret = epoll_wait(epollFd, events, FDNUMBER, 0); //执行一次非阻塞检测
     if (ret == -1) 
     {
@@ -132,7 +134,7 @@ epoll_event* Epoll::Wait(int& ret)
         exit(1);
     }    
     
-    return events;
+    // return events;
 }
 
 

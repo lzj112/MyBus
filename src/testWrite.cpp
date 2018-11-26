@@ -31,11 +31,6 @@ int main()
     BusCard* cardPtr = station.initChannelControl(10); //创建共享内存控制块及通信队列
     station.prepareSocket(sourceIP, sourcePort);
 
-    // //应该转换成package body类型把
-    // void* write = station.getLocalQueue(cardPtr, WRITE);  //获取写队列的映射地址
-
-    // // void* read = station.getMessageQueue(cardPtr, 0);   //获取读队列映射地址
-
     const char p[] = "hello,i`m labai,How are u ?";
     int length = strlen(p) + 1;
     
