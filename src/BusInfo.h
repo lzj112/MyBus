@@ -60,6 +60,8 @@ struct Notice
     struct PacketHead head;
     struct ProComm netQueaad;
     int shmid;      //buscard的shmid
+    char destPassIP[8];
+    int destPassPort;
 };
 
 //路由表

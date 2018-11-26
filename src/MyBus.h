@@ -39,7 +39,7 @@ class MyBus
     int recvFromLocal(BusCard* cardPtr, char* buffer, int length);
     int sendByNetwork(BusCard* card, const char* passIP, int passPort, const char* destPastIP, 
                       int destPassPort, const struct ProComm& str, const char* buffer);
-    int recvFromNetwork(const char* passIP, int passPort, const char* buffer);
+    int recvFromNetwork(/*const char* passIP, int passPort, */const char* buffer);
     void saveLocalMessage(BusCard* card, const char* buffer);
 
   private:

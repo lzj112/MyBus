@@ -33,24 +33,25 @@ int main()
 
     const char p[] = "i`m fine fuck u!!!!!!!!!! ?";
     int length = strlen(p) + 1;
-    
-    int i = 20;
-    while (i--)
+
+    //跨物理机发送
+    ProComm tmp;
+    strcmp(tmp.destIP, destIP);
+    strcmp(tmp.sourceIP, sourceIP);
+    tmp.destPort = destPort;
+    tmp.sourcePort = sourcePort;
+    int ret = station.sendByNetwork(cardPtr, passIP, passPort, destPassIP, destPassPort, 
+                                        tmp, p);
+
+   /* 
+    本机测试
+    while (1)
     {
         cout << "di " << i << " ci" << endl;
         //本机发送
         int ret = station.sendToLocal(cardPtr, p, length);
         sleep(1);
     }
-    
-    // //跨物理机发送
-    // ProComm tmp;
-    // strcmp(tmp.destIP, destIP);
-    // strcmp(tmp.sourceIP, sourceIP);
-    // tmp.destPort = destPort;
-    // tmp.sourcePort = sourcePort;
-    // int ret = station.sendByNetwork(cardPtr, passIP, passPort, destPassIP, destPassPort, 
-    //                                tmp, p);
-    //还得提供对端中转进程的IP和端口
-
+    */
+   
 }

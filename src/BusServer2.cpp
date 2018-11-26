@@ -12,7 +12,7 @@ int main()
     NetComm plane;
 
     plane.initList();
-    plane.socketControl.startListening(ip, port);
+    plane.prepareSocket(ip, port);
     plane.runMyEpoll();
 
 }

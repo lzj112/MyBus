@@ -21,6 +21,19 @@ void NetComm::initList()
     assert(res != -1);
 }
 
+void NetComm::prepareSocket(const char* ip, int port) 
+{
+    socketControl.initSocketfd();
+    socketControl.initSocketfd(1);
+    socketControl.startListening(ip, port);
+
+    int tcpfd = socketControl.getMysockfd();
+    int udpfd = socketControl.getMysockfd(1);
+    myEpoll.Create(tcpfd, udpfd);
+    myEpoll.Add(tcpfd, EPOLLIN);
+    myEpoll.Add(udpfd, EPOLLIN);
+}
+
 /*
 同一个主机上的不同进程应该访问的都是
 这一块共享内存
@@ -39,6 +52,7 @@ int NetComm::initShmList()  //初始化路由表
     if (netListHead_Addr == nullptr) 
     {
         netListHead_Addr = static_cast<RoutingTable *> (shmat(netListHead_ID, nullptr, 0));
+        memset(netListHead_Addr, 0, sizeof(RoutingTable));
     }
 
     return 0;
@@ -57,6 +71,7 @@ int NetComm::initShmList(int) //初始化中转通道
     if (proListHead_Addr == nullptr) 
     {
         proListHead_Addr = static_cast<proToNetqueue *> (shmat(proListHead_ID, nullptr, 0));
+        memset(proListHead_Addr, 0, sizeof(proToNetqueue));
     }
 
     return 0;
@@ -75,10 +90,6 @@ int NetComm::creShmQueue(int proj_id)
 
 int NetComm::updateList(int sockfd, const char* ip, int port) 
 {
-    if (ip == nullptr) 
-    {
-        std::cout << "infoTmp == nullptr in update 1" << std::endl;
-    }
     /*
     如果端口一样ip就一样,就是同一个连接,就不会存储进来
     会直接用那个连接,所以port会是唯一的
@@ -101,11 +112,6 @@ int NetComm::updateList(int sockfd, const char* ip, int port)
 
 int NetComm::updateList(const struct ProComm& str) 
 {
-    if (proListHead_Addr == nullptr) 
-    {
-        std::cout << "prolisthead_addr == nullptr 2" << std::endl;
-    }
-
     //进程pid也唯一,保证key唯一
     key_t key = static_cast<key_t> (str.destPort);
     if (key == -1) 
@@ -232,7 +238,6 @@ int NetComm::isThereConn(const char* ip, int port)
         nodePtr = static_cast<RoutingTable *> (shmat(nextId, nullptr, 0));
         shmdt(tmpAddr);
     }
-
     return connfd;
 }
 
@@ -278,12 +283,6 @@ void NetComm::runMyEpoll()
 {
     int tcpfd = socketControl.getMysockfd();
     int udpfd = socketControl.getMysockfd(1);
-    myEpoll.Create(tcpfd);
-    myEpoll.Create(udpfd, 1);
-    myEpoll.Add(tcpfd, EPOLLIN);
-    myEpoll.Add(udpfd, EPOLLIN);
-
-
     signal(SIGPIPE, SIG_IGN);   //忽略sigpipe
     
     int ret;
@@ -294,38 +293,40 @@ void NetComm::runMyEpoll()
         myEpoll.Wait(ret, events);
         for (int i = 0; i < ret; i++) 
         {
-            if (events[i].data.fd == udpfd) 
+            // if (events[i].data.fd == udpfd) //本机发来的udp通知
+            // {
+            // std::cout << "收到本机udp通知\n" << std::endl;
+            //     int connfd = events[i].data.fd;
+            //     std::thread t(&NetComm::recvFromUDP, this, connfd);
+            //     t.detach();
+            // }
+            if (events[i].events & EPOLLIN) 
             {
+                if (events[i].data.fd == udpfd) //本机发来的udp通知
+            {
+            std::cout << "收到本机udp通知\n" << std::endl;
                 int connfd = events[i].data.fd;
                 std::thread t(&NetComm::recvFromUDP, this, connfd);
                 t.detach();
             }
-            if (events[i].events & EPOLLIN) 
-            {
-                if (events[i].data.fd == tcpfd) 
+                else if (events[i].data.fd == tcpfd) 
                 {
+            std::cout << "有别的物理机的连接的请求\n" << std::endl;
                     myEpoll.newConnect(tcpfd);
                 }
                 else 
                 {
+            std::cout << "读取别的物理机发来的消息\n" << std::endl;
                     int connfd = events[i].data.fd;
                     std::thread t(&NetComm::recvFromTCP, this, connfd);
                     t.detach();
                 }
             }
         }
-        /*
-        if (!readableSocket.empty()) 
-        {
-            for_each (readableSocket.begin(), readableSocket.end(), [=](int connfd){
-                std::thread t(&NetComm::recvFrom, this, connfd);
-                t.detach();
-            });
-        }*/
     }
 }
 
-//接收消息
+//从套接字接收消息
 int NetComm::getMessage(int connfd, void* buffer, int length) 
 {
     int count = 0;
@@ -426,21 +427,6 @@ void NetComm::recvFromTCP(int connfd)
     dealData(connfd, tmpBuffer);
 }
 
-//收到跨机器发来的消息并存入共享内存后,通知本机进程共享内存id
-void NetComm::inform(const char* ip, int port, int id) 
-{
-    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-    assert(sockfd != -1);
-    struct sockaddr_in addr;
-    memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(port);
-    addr.sin_addr.s_addr = inet_addr(ip);
-
-    int buffer = id;
-    sendto(sockfd, (void *)&buffer, sizeof(buffer), 0, (struct sockaddr*)&addr, sizeof(addr));
-}
-
 void NetComm::dealData(int connfd, const PacketBody& tmpBuffer) 
 {
     //获取接收此消息的共享内存缓冲区(proToNetqueue)
@@ -463,7 +449,8 @@ void NetComm::dealData(int connfd, const PacketBody& tmpBuffer)
     }
 
     //告知进程共享内存通道id
-    inform(tmpBuffer.netQuaad.destIP, tmpBuffer.netQuaad.destPort, netShmid);
+    //收到跨机器发来的消息并存入共享内存后,通知本机进程共享内存id
+    socketControl.inform(tmpBuffer.netQuaad.destIP, tmpBuffer.netQuaad.destPort, netShmid);
 }
 
 void NetComm::recvFromUDP(int connfd) 
@@ -479,15 +466,19 @@ void NetComm::recvFromUDP(int connfd)
 
 void NetComm::forwarding(const Notice& str)  
 {
-
     //从共享内存中获取本机进程存入的buffer, 发往另一个物理机
     PacketBody tmp;
     copy(tmp, str);
-    int connfd = isThereConn(tmp.netQuaad.destIP, tmp.netQuaad.destPort);
+
+std::cout << "转发 " << tmp.buffer << std::endl;
+    
+    int connfd = isThereConn(str.destPassIP, str.destPassPort);
     if (connfd == -1) 
     {
-        connfd = socketControl.makeNewConn(tmp);
-        updateList(connfd, tmp.netQuaad.destIP, tmp.netQuaad.destPort);
+        connfd = socketControl.makeNewConn(str.destPassIP, str.destPassPort);
+std::cout << std::endl;
+        updateList(connfd, str.destPassIP, str.destPassPort);
     }
+std::cout << std::endl;
     socketControl.sendTo(tmp, connfd);
 }

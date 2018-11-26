@@ -25,16 +25,10 @@ void Epoll::setNonblock(int fd)
 //     Add(listenFd, EPOLLIN);
 // }
 
-void Epoll::Create(int fd, int flag) 
+void Epoll::Create(int fdtcp, int fdudp) 
 {
-    if (flag == 0) 
-    {
-        listenFd = fd;
-    }
-    else 
-    {
-        udpfd = fd;
-    }
+    listenFd = fdtcp;
+    udpfd = fdudp;
 }
 
 void Epoll::Add(int fd, int op) 
@@ -54,24 +48,30 @@ void Epoll::Del(int fd)
     epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, &ev);
 }
 
-int Epoll::newConnect(int listenFd) 
+int Epoll::newConnect(int listenFd) //好像在accept阻塞了 不是用的非阻塞么?明天查一下
 {
-    int connfd;
+    int connfd = -1;
     /*
     新的连接套接字也每个都设置成非阻塞
     */
     struct sockaddr_in client;
     socklen_t cliLength = sizeof(client);
+    //防止连接淤积
     while (1)
    { 
+    std::cout << "???connfd == " << connfd << std::endl;
         memset(&client, 0, cliLength);   
         connfd = accept(listenFd, (sockaddr *)&client, &cliLength); //读取新连接
         if (connfd <= 0) 
         {
+        std::cout << "has been broken" << std::endl;
             break;
         }
-        setNonblock(connfd);  //设置为非阻塞
-        Add(connfd, EPOLLIN);       //将新的连接socketfd添加到合集
+        else 
+        {
+            setNonblock(connfd);  //设置为非阻塞
+            Add(connfd, EPOLLIN);       //将新的连接socketfd添加到合集
+        }
     }
     if (connfd == -1) 
     {
@@ -80,7 +80,8 @@ int Epoll::newConnect(int listenFd)
             perror("accept is wrong : ");
         }
     }
-    return connfd;
+std::cout << "新连接已经成功连接\n";
+    return 0;
 }
 
 /*
@@ -123,18 +124,19 @@ std::vector<int> Epoll::epollET(int epollFd, epoll_event* events, int ret)
 }
 */
 
-// epoll_event* Epoll::Wait(int& ret, epoll_event* events)
 void Epoll::Wait(int& ret, epoll_event* events)
 {
-    // epoll_event events[FDNUMBER];  //fd合集
     ret = epoll_wait(epollFd, events, FDNUMBER, 0); //执行一次非阻塞检测
     if (ret == -1) 
     {
         perror("epoll_wait has err ");
         exit(1);
     }    
-    
-    // return events;
+if (ret > 0) 
+{
+    std::cout << "epoll got somethings\n";
+}
+
 }
 
 

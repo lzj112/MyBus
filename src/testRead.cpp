@@ -36,7 +36,10 @@ int main()
     station.prepareSocket(sourceIP, sourcePort);
     
     char p[256];
-    
+
+    station.recvFromNetwork(p);
+
+   /* 
     while (1)
     {
         station.recvFromLocal(cardPtr, p, 256);
@@ -48,4 +51,5 @@ int main()
         memset(p, '\0', sizeof(p));
         sleep(1);
     }
+    */
 }

@@ -38,6 +38,7 @@ public:
     // int getListenFd();
 
     //在这里运行epoll run,读取数据拿出来让NetComm做
+    void prepareSocket(const char* ip, int port);
     void runMyEpoll();
     void recvFromTCP(int confd);
     void recvFromUDP(int connfd);
@@ -47,7 +48,6 @@ public:
     void copy(PacketBody& str, const Notice& tmp);
     void dealData(int connfd, const PacketBody& tmpbuffer);
     void forwarding(const Notice& str);
-    void inform(const char* ip, int port, int id);
 
     Epoll myEpoll;
     socketBus socketControl;    //socket TCP连接

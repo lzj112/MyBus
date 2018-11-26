@@ -282,7 +282,6 @@ int MyBus::sendToLocal(BusCard* cardPtr, const char* buffer, int length)
         std::lock_guard<std::mutex> locker(my_lock);
         queueFront = getQueueFront(cardPtr, WRITE); 
         queueRear = getQueueRear(cardPtr, WRITE);
-std::cout << "before " << queueFront << ' ' << queueRear << std::endl;
     }
     if ((queueRear + 1) % QUEUESIZE == queueFront) //队列满,牺牲了队列中一个元素保持空来判断队满
     {
@@ -306,23 +305,16 @@ std::cout << "before " << queueFront << ' ' << queueRear << std::endl;
 
 int MyBus::recvFromLocal(BusCard* cardPtr, char* buffer, int length) 
 {
-    if (cardPtr == nullptr) 
-    {
-        std::cout << "recvlocal 1" << std::endl;
-        return -1;
-    }
-
     int queueFront, queueRear;
     {   
         //获得写队列头尾指针
         std::lock_guard<std::mutex> locker(my_lock);
         queueFront = getQueueFront(cardPtr, READ); 
         queueRear = getQueueRear(cardPtr, READ);
-std::cout << "before " << queueFront << ' ' << queueRear << std::endl;
     }
-    if (queueFront == queueRear) //queue is empty
+    if (queueFront == queueRear) 
     {
-        std::cout << "recvlocal 2" << std::endl;
+        std::cout << "queue is empty" << std::endl;
         return -1;
     }
 
@@ -339,12 +331,6 @@ std::cout << "before " << queueFront << ' ' << queueRear << std::endl;
 
 void MyBus::saveLocalMessage(BusCard* card, const char* buffer) 
 {
-    if (card == nullptr) 
-    {
-        std::cout << "sendtolocal 1" << std::endl;
-        return ;
-    }
-
     int queueFront = card->netQueue[1];
     int queueRear = card->netQueue[2];
     if ((queueRear + 1) % QUEUESIZE == queueFront) //队列满,牺牲了队列中一个元素保持空来判断队满
@@ -369,20 +355,26 @@ int MyBus::sendByNetwork(BusCard* card, const char* passIP, int passPort, const 
     //存储进共享内存发送缓冲区
     saveLocalMessage(card, p);
 
+std::cout << "存储结束" << std::endl;
+
     Notice tmp;
     tmp.head.type = READY;
-    const char* sourceIP = getLocalIP();
-    strcmp(tmp.netQueaad.sourceIP, sourceIP);
+    // const char* sourceIP = getLocalIP();
+
+    strcmp(tmp.netQueaad.sourceIP, str.sourceIP);
     strcmp(tmp.netQueaad.destIP, str.destIP);
     tmp.netQueaad.destPort = str.destPort;
     tmp.netQueaad.sourcePort = str.sourcePort;
     tmp.shmid = card->shmSelfId;
+    tmp.destPassPort = destPassPort;
+    strcmp(tmp.destPassIP, destPassIP);
 
     //向中转进程发送通知
-    socketControl.sendTo(str.destIP, str.destPort, tmp);
+    socketControl.sendTo(passIP, passPort, tmp);
+std::cout << "发送完毕" << std::endl;
 }
 
-int MyBus::recvFromNetwork(const char* passIP, int passPort, const char* buffer) 
+int MyBus::recvFromNetwork(/*const char* passIP, int passPort, */const char* buffer) 
 {
     int buf;
     int udpfd = socketControl.getMysockfd(1);
