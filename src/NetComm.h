@@ -46,7 +46,7 @@ public:
     void copy(PacketBody* ptr, const PacketBody& str);
     void copy(PacketBody& str, const Notice& tmp);
     void dealData(int connfd, const PacketBody& tmpbuffer);
-    void forwarding(int connfd, const Notice& str);
+    void forwarding(const Notice& str);
     void inform(const char* ip, int port, int id);
 
     Epoll myEpoll;

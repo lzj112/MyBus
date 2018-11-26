@@ -296,7 +296,8 @@ void NetComm::runMyEpoll()
         {
             if (events[i].data.fd == udpfd) 
             {
-                std::thread t(&NetComm::recvFromUDP, this, events[i].data.fd);
+                int connfd = events[i].data.fd;
+                std::thread t(&NetComm::recvFromUDP, this, connfd);
                 t.detach();
             }
             if (events[i].events & EPOLLIN) 
@@ -307,7 +308,8 @@ void NetComm::runMyEpoll()
                 }
                 else 
                 {
-                    std::thread t(&NetComm::recvFromTCP, this, events[i].data.fd);
+                    int connfd = events[i].data.fd;
+                    std::thread t(&NetComm::recvFromTCP, this, connfd);
                     t.detach();
                 }
             }
@@ -396,11 +398,8 @@ void NetComm::copy(PacketBody& str, const Notice& tmp)
     str.head.type = READY >> 1 + 12;
     strcmp(str.netQuaad.destIP, tmp.netQueaad.destIP);
     strcmp(str.netQuaad.sourceIP, str.netQuaad.sourceIP);
-    str = 
-    {
-        .netQuaad.destPort = tmp.netQueaad.destPort,
-        .netQuaad.sourcePort = tmp.netQueaad.sourcePort
-    };
+    str.netQuaad.destPort = tmp.netQueaad.destPort;
+    str.netQuaad.sourcePort = tmp.netQueaad.sourcePort;
 
     BusCard* tmpAddr1 = static_cast<BusCard *> (shmat(tmp.shmid, nullptr, 0));
     if (tmpAddr1->netQueue[1] != tmpAddr1->netQueue[2])
@@ -475,10 +474,10 @@ void NetComm::recvFromUDP(int connfd)
     {
         perror("recvFromUDP");
     }
-    forwarding(connfd, tmpBuffer);
+    forwarding(tmpBuffer);
 }
 
-void NetComm::forwarding(int connfd, const Notice& str)  
+void NetComm::forwarding(const Notice& str)  
 {
 
     //从共享内存中获取本机进程存入的buffer, 发往另一个物理机
