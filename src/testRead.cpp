@@ -13,19 +13,19 @@ using namespace std;
 
 //本机IP 端口
 const char* sourceIP = "127.0.0.1";
-int sourcePort = 4097;
+int sourcePort = 4099;
 
 //本机中转进程IP 端口
 const char* passIP = "127.0.0.1";
-int passPort;
+int passPort = 4097;
 
 //对端中转进程ip 端口
 const char* destPassIP = "127.0.0.1";
-int destPassPort = 4098;
+int destPassPort = 4096;
 
 //目标进程ip 端口
 const char* destIP = "127.0.0.1";
-int destPort = 4096;
+int destPort = 4098;
 
 
 int shmid = 5275659;
@@ -45,6 +45,7 @@ int main()
         //     break;
         // }
         cout << "here is message from local:\n [" << p << "]" << endl;
-        // memset(p, '\0', sizeof(p));
+        memset(p, '\0', sizeof(p));
+        sleep(1);
     }
 }

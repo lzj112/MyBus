@@ -19,17 +19,13 @@ int socketTCP::setNonBlock(int fd)
     return 0;
 }
 
-int socketTCP::initSocketfd(int domain, int type, int protocol) 
+void socketTCP::initSocketfd() 
 {
-    if (type == SOCK_STREAM) 
-    {
-        fdTCP = socket(domain, type, protocol);
-    }
-    else if (type == SOCK_DGRAM)
-    {
-        fdUDP = socket(domain, type, protocol);
-    }
-    return 0;
+    fdTCP = socket(AF_INET, SOCK_STREAM, 0);
+}
+void socketTCP::initSocketfd(int) 
+{
+    fdUDP = socket(AF_INET, SOCK_DGRAM, 0);
 }
 
 int socketTCP::Bind(const char* ip, int port) 
@@ -46,11 +42,19 @@ int socketTCP::Bind(const char* ip, int port)
     addr.sin_port = htons(port);
     inet_pton(AF_INET, ip, &addr.sin_addr);
 
+    int optval = 1;
+    setsockopt(fdTCP, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval));
     int res = bind(fdTCP, (struct sockaddr*)&addr, sizeof(addr));
-    assert(res != -1);
+    if (res == -1) 
+    {
+        perror("bind fdtcp");
+    }
 
     res = bind(fdUDP, (struct sockaddr*)&addr, sizeof(addr));
-    assert(res != -1);
+    if (res == -1) 
+    {
+        perror("fdudp bind");
+    }
     
     return 0;
 }

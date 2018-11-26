@@ -31,7 +31,9 @@ public:
         return fdUDP;
     }
     int setNonBlock(int fd);
-    int initSocketfd(int domain = AF_INET, int type = SOCK_STREAM, int protocol = 0);
+    // int initSocketfd(int domain = AF_INET, int type = SOCK_STREAM, int protocol = 0);
+    void initSocketfd();
+    void initSocketfd(int);
     int Bind(const char* ip, int port);
     int Listen(int backlog = MAXLEN);
     int Connect(const char* ip, int port);
