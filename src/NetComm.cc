@@ -29,6 +29,7 @@ void NetComm::prepareSocket(const char* ip, int port)
 
     int tcpfd = socketControl.getMysockfd();
     int udpfd = socketControl.getMysockfd(1);
+
     myEpoll.Create(tcpfd, udpfd);
     myEpoll.Add(tcpfd, EPOLLIN);
     myEpoll.Add(udpfd, EPOLLIN);
@@ -48,7 +49,15 @@ int NetComm::initShmList()  //初始化路由表
     }
 
     netListHead_ID = shmget(key, sizeof(RoutingTable), IPC_CREAT | 0666);
-  
+    if (netListHead_ID == -1) 
+    {
+        netListHead_ID = shmget(key, 0, 0);
+        if (netListHead_ID == -1) 
+        {
+            perror("shmget in initshmlist");
+        }
+    }
+
     if (netListHead_Addr == nullptr) 
     {
         netListHead_Addr = static_cast<RoutingTable *> (shmat(netListHead_ID, nullptr, 0));
@@ -68,6 +77,14 @@ int NetComm::initShmList(int) //初始化中转通道
     }
 
     proListHead_ID = shmget(key, sizeof(proToNetqueue), IPC_CREAT | 0666);
+    if (proListHead_ID == -1) 
+    {
+        proListHead_ID = shmget(key, 0, 0);
+        if (proListHead_ID == -1)
+        {
+            perror("shmget in initshmlist");
+        }
+    }
     if (proListHead_Addr == nullptr) 
     {
         proListHead_Addr = static_cast<proToNetqueue *> (shmat(proListHead_ID, nullptr, 0));
@@ -83,7 +100,14 @@ int NetComm::creShmQueue(int proj_id)
     assert(key != -1);
 
     int shmid = shmget(key, sizeof(PacketBody) * QUEUESIZE, IPC_CREAT | 0666);
-    assert(shmid != -1);
+    if (shmid == -1) 
+    {
+        shmid = shmget(key, 0, 0);
+        if (shmid == -1) 
+        {
+            perror("shmget in creshmqueue");
+        }
+    }
 
     return shmid;
 }
@@ -97,7 +121,14 @@ int NetComm::updateList(int sockfd, const char* ip, int port)
     //每个端口都唯一,这样保证了key唯一
     key_t key = static_cast<key_t> (sockfd);
     int shmid = shmget(key, sizeof(RoutingTable), IPC_CREAT | 0666);
-
+    if (shmid == -1) 
+    {
+        shmid = shmget(key, 0, 0);
+        if (shmid == -1) 
+        {
+            perror("shmget in updatelist");
+        }
+    }
     RoutingTable* shmTmpAddr = static_cast<RoutingTable *> (shmat(shmid, nullptr, 0));
 
     shmTmpAddr->sockfd = sockfd;
@@ -121,15 +152,22 @@ int NetComm::updateList(const struct ProComm& str)
     }
 
     int shmid = shmget(key, sizeof(proToNetqueue), IPC_CREAT | 0666);
-
+    if (shmid == -1) 
+    {
+        shmid = shmget(key, 0, 0);
+        if (shmid == -1) 
+        {
+            perror("shmget in creshmqueue");
+        }
+    }
     proToNetqueue* tmpAddr = static_cast<proToNetqueue *> (shmat(shmid, nullptr, 0));
 
     //赋值新节点
     tmpAddr->shmSelfId = shmid;
-    tmpAddr->destPort = str.sourcePort;
-    tmpAddr->sourcePort = str.destPort;
-    strcmp(tmpAddr->destIP, str.sourceIP);
-    strcmp(tmpAddr->sourceIP, str.destIP);
+    tmpAddr->destPort = str.sourcePassPort;
+    tmpAddr->sourcePort = str.destPassPort;
+    strcmp(tmpAddr->sourceIP, str.destPassIP);
+    strcmp(tmpAddr->destIP, str.sourcePassIP);
     tmpAddr->readQueue = creShmQueue(str.destPort | READ);
     tmpAddr->shmidNext = proListHead_Addr->shmidNext;   //新节点指向头结点下一节点
     proListHead_Addr->shmidNext = shmid;                //头结点指向新节点
@@ -219,6 +257,7 @@ int NetComm::isThereConn(const char* ip, int port)
     //指向头结点下一节点
     RoutingTable* nodePtr = static_cast<RoutingTable *> (shmat(nextNode, nullptr, 0));
 
+printf("isthereconn 进入循环\n");
     int connfd = -1;
     while (1)
     {
@@ -238,6 +277,8 @@ int NetComm::isThereConn(const char* ip, int port)
         nodePtr = static_cast<RoutingTable *> (shmat(nextId, nullptr, 0));
         shmdt(tmpAddr);
     }
+printf("isthere func is over\n");
+
     return connfd;
 }
 
@@ -327,13 +368,13 @@ void NetComm::runMyEpoll()
 }
 
 //从套接字接收消息
-int NetComm::getMessage(int connfd, void* buffer, int length) 
+int NetComm::getMessage(int connfd, PacketBody* buffer, int length) 
 {
     int count = 0;
     int ret = 0;
     while (count < length) 
     {
-        ret = recv(connfd, buffer, length, 0);
+        ret = recv(connfd, (buffer + count), length, 0);
         count += ret;
         if (ret == -1) 
         {
@@ -349,7 +390,6 @@ int NetComm::getMessage(int connfd, void* buffer, int length)
         }
         if (ret == 0) 
         {
-            // myEpoll.Ctl(connfd, EPOLL_CTL_DEL);
             myEpoll.Del(connfd);
             close(connfd);
             break;
@@ -397,15 +437,20 @@ void NetComm::copy(PacketBody* ptr, const PacketBody& str)
 void NetComm::copy(PacketBody& str, const Notice& tmp) 
 {
     str.head.type = READY >> 1 + 12;
+    str.head.bodySzie = sizeof(PacketBody);
     strcmp(str.netQuaad.destIP, tmp.netQueaad.destIP);
     strcmp(str.netQuaad.sourceIP, str.netQuaad.sourceIP);
+    strcmp(str.netQuaad.destPassIP, tmp.netQueaad.destPassIP);
+    strcmp(str.netQuaad.sourcePassIP, tmp.netQueaad.sourcePassIP);
     str.netQuaad.destPort = tmp.netQueaad.destPort;
     str.netQuaad.sourcePort = tmp.netQueaad.sourcePort;
+    str.netQuaad.destPassPort = tmp.netQueaad.destPassPort;
+    str.netQuaad.sourcePassPort = tmp.netQueaad.sourcePassPort;
 
     BusCard* tmpAddr1 = static_cast<BusCard *> (shmat(tmp.shmid, nullptr, 0));
     if (tmpAddr1->netQueue[1] != tmpAddr1->netQueue[2])
     {
-        PacketBody* tmpAddr2 = static_cast<PacketBody *> (shmat(tmpAddr1->netQueue[0], nullptr, 0));
+        PacketBody* tmpAddr2 = static_cast<PacketBody *> (shmat(tmpAddr1->netQueue[0], nullptr, 0)) + tmpAddr1->netQueue[1];
         strcpy(str.buffer, tmpAddr2->buffer);
         tmpAddr1->netQueue[1]++;
         
@@ -420,11 +465,12 @@ void NetComm::recvFromTCP(int connfd)
     PacketBody tmpBuffer;
     memset(&tmpBuffer, 0, sizeof(PacketBody));
     //先收包头
-    offset = getMessage(connfd, (void *)(&tmpBuffer + offset), 12);
+    offset = getMessage(connfd, (&tmpBuffer + offset), 12);
     //再收包体
-    getMessage(connfd, (void *)(&tmpBuffer + offset), tmpBuffer.head.bodySzie);
+    getMessage(connfd, (&tmpBuffer + offset), tmpBuffer.head.bodySzie);
     //处理数据
     dealData(connfd, tmpBuffer);
+printf("44444444444444\n");
 }
 
 void NetComm::dealData(int connfd, const PacketBody& tmpBuffer) 
@@ -439,18 +485,23 @@ void NetComm::dealData(int connfd, const PacketBody& tmpBuffer)
 
     //shmid中获取写队列 写入数据 
     saveMessage(proShmid, tmpBuffer);
-
+printf("777777\n");
     //若是一个新的连接 更新路由表
     int netShmid = isThereConn(tmpBuffer.netQuaad.destIP, tmpBuffer.netQuaad.destPort);
     if (netShmid == -1) 
     {
+    printf("开始调用 updatelist \n");
         //路由表中没有这个链接,将发送端ip和端口保存
         updateList(connfd, tmpBuffer.netQuaad.sourceIP, tmpBuffer.netQuaad.sourcePort);    
+    printf("调用 updatelist 结束\n");
     }
 
+printf("开始调用 inform\n");
     //告知进程共享内存通道id
     //收到跨机器发来的消息并存入共享内存后,通知本机进程共享内存id
     socketControl.inform(tmpBuffer.netQuaad.destIP, tmpBuffer.netQuaad.destPort, netShmid);
+
+printf("调用 inform 结束\n");
 }
 
 void NetComm::recvFromUDP(int connfd) 
@@ -472,13 +523,11 @@ void NetComm::forwarding(const Notice& str)
 
 std::cout << "转发 " << tmp.buffer << std::endl;
     
-    int connfd = isThereConn(str.destPassIP, str.destPassPort);
+    int connfd = isThereConn(str.netQueaad.destPassIP, str.netQueaad.destPassPort);
     if (connfd == -1) 
     {
-        connfd = socketControl.makeNewConn(str.destPassIP, str.destPassPort);
-std::cout << std::endl;
-        updateList(connfd, str.destPassIP, str.destPassPort);
+        connfd = socketControl.makeNewConn(str.netQueaad.destPassIP, str.netQueaad.destPassPort);
+        updateList(connfd, str.netQueaad.destPassIP, str.netQueaad.destPassPort);
     }
-std::cout << std::endl;
     socketControl.sendTo(tmp, connfd);
 }

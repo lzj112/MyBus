@@ -70,11 +70,12 @@ BusCard* MyBus::initChannelControl(int proj_id)
 
     //挂载到当前进程
     BusCard* cardPtr = static_cast<BusCard *> (shmat(shmid, nullptr, 0));
+    memset(cardPtr, 0, sizeof(BusCard));
 
     cardPtr->shmSelfId = shmid;
     cardPtr->ftokKey = key;
     cardPtr->localQueue[0][2] = (int)getpid();
-    
+
     //初始化通信通道
     initShmQueue(cardPtr);
 
@@ -99,8 +100,22 @@ int MyBus::initShmQueue(BusCard* card)
     {
         int keyTmp = (card->ftokKey >> 16) + i;  //防止重复
         int key_ = getKey(keyTmp);
-    
         int shmid = shmget(keyTmp, sizeof(PacketBody) * QUEUESIZE, IPC_CREAT | 0666);
+        if (shmid == -1) 
+        {
+            shmid = shmget(keyTmp, 0, 0);
+            if (shmid == -1)
+            {
+                perror("shmget error");
+            }
+        }
+        PacketBody* tmpAddr = static_cast<PacketBody *> (shmat(shmid, nullptr, 0));
+        if (tmpAddr == (void *)-1) 
+        {
+            perror("shmat is error");
+        }
+        // memset(tmpAddr, 0, sizeof(PacketBody) * QUEUESIZE);
+        shmdt(tmpAddr);
         if (i == 2) 
         {
             card->netQueue[0] = shmid;
@@ -244,36 +259,6 @@ int MyBus::addQueueRear(BusCard* cardPtr, int flag)
     return 1;
 }
 
-char* MyBus::getLocalIP() 
-{
-    int MAXINTERFACES = 16;
-    char* ip = NULL;
-    int fd, intrface, retn = 0;
-    struct ifreq buf[MAXINTERFACES];
-    struct ifconf ifc;
-
-    if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) >= 0)
-    {
-        ifc.ifc_len = sizeof(buf);
-        ifc.ifc_buf = (caddr_t)buf;
-        if (!ioctl(fd, SIOCGIFCONF, (char *)&ifc))
-        {
-            intrface = ifc.ifc_len / sizeof(struct ifreq);
-
-            while (intrface-- > 0)
-            {
-                if (!(ioctl(fd, SIOCGIFADDR, (char *)&buf[intrface])))
-                {
-                    ip = (inet_ntoa(((struct sockaddr_in *)(&buf[intrface].ifr_addr))->sin_addr));
-                    break;
-                }
-            }
-        }
-        close(fd);
-        return ip;
-    }
-}
-
 int MyBus::sendToLocal(BusCard* cardPtr, const char* buffer, int length) 
 {
     int queueFront, queueRear;
@@ -335,13 +320,17 @@ void MyBus::saveLocalMessage(BusCard* card, const char* buffer)
     int queueRear = card->netQueue[2];
     if ((queueRear + 1) % QUEUESIZE == queueFront) //队列满,牺牲了队列中一个元素保持空来判断队满
     {
-        std::cout << "snetqueue is full" << std::endl;
+        std::cout << "netqueue is full" << std::endl;
         return ;
     }
-    PacketBody* destPtr = (static_cast<PacketBody *> (shmat(card->netQueue[0], nullptr, 0))) + queueRear;
-    
-    strcpy(destPtr->buffer, buffer);
+    PacketBody* destPtr = (static_cast<PacketBody *> (shmat(card->netQueue[0], nullptr, 0)) + queueRear);
+    if (destPtr == (void *)-1) 
+    {
+        perror("shmat");
+    }
 
+    memset(destPtr->buffer, 0, sizeof(destPtr->buffer));
+    strcpy(destPtr->buffer, buffer);
     
     card->netQueue[2] = (card->netQueue[2] + 1) % QUEUESIZE; 
 
@@ -349,30 +338,20 @@ void MyBus::saveLocalMessage(BusCard* card, const char* buffer)
 }
 
 
-int MyBus::sendByNetwork(BusCard* card, const char* passIP, int passPort, const char* destPassIP, 
-                        int destPassPort, const ProComm& str, const char* p)
+int MyBus::sendByNetwork(BusCard* card, const ProComm& str, const char* buffer, int length)
 {
     //存储进共享内存发送缓冲区
-    saveLocalMessage(card, p);
-
-std::cout << "存储结束" << std::endl;
+    saveLocalMessage(card, buffer);
 
     Notice tmp;
     tmp.head.type = READY;
-    // const char* sourceIP = getLocalIP();
-
-    strcmp(tmp.netQueaad.sourceIP, str.sourceIP);
-    strcmp(tmp.netQueaad.destIP, str.destIP);
-    tmp.netQueaad.destPort = str.destPort;
-    tmp.netQueaad.sourcePort = str.sourcePort;
+    tmp.netQueaad = str;
     tmp.shmid = card->shmSelfId;
-    tmp.destPassPort = destPassPort;
-    strcmp(tmp.destPassIP, destPassIP);
 
     //向中转进程发送通知
-    socketControl.sendTo(passIP, passPort, tmp);
-std::cout << "发送完毕" << std::endl;
+    socketControl.sendTo(str.sourcePassIP, str.sourcePassPort, tmp);
 }
+
 
 int MyBus::recvFromNetwork(/*const char* passIP, int passPort, */const char* buffer) 
 {

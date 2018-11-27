@@ -37,8 +37,7 @@ class MyBus
     char* getLocalIP();
     int sendToLocal(BusCard* cardPtr, const char* buffer, int length);    //收发数据
     int recvFromLocal(BusCard* cardPtr, char* buffer, int length);
-    int sendByNetwork(BusCard* card, const char* passIP, int passPort, const char* destPastIP, 
-                      int destPassPort, const struct ProComm& str, const char* buffer);
+    int sendByNetwork(BusCard* card, const struct ProComm& str, const char* buffer, int length);
     int recvFromNetwork(/*const char* passIP, int passPort, */const char* buffer);
     void saveLocalMessage(BusCard* card, const char* buffer);
 

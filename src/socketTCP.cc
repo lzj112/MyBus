@@ -22,10 +22,20 @@ int socketTCP::setNonBlock(int fd)
 void socketTCP::initSocketfd() 
 {
     fdTCP = socket(AF_INET, SOCK_STREAM, 0);
+    if (fdTCP == -1) 
+    {
+        perror("socket fdtcp");
+    }
+    setNonBlock(fdTCP);
 }
+
 void socketTCP::initSocketfd(int) 
 {
     fdUDP = socket(AF_INET, SOCK_DGRAM, 0);
+    if (fdUDP == -1) 
+    {
+        perror("socket fdudp");
+    }
 }
 
 int socketTCP::Bind(const char* ip, int port) 
@@ -35,7 +45,7 @@ int socketTCP::Bind(const char* ip, int port)
         std::cout << "ip is nullptr in Bind" << std::endl;
         return -1;
     }
-
+printf("bind ip == %s port = %d\n", ip, port);
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;

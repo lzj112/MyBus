@@ -42,7 +42,7 @@ public:
     void runMyEpoll();
     void recvFromTCP(int confd);
     void recvFromUDP(int connfd);
-    int getMessage(int connfd, void* buffer, int length);
+    int getMessage(int connfd, PacketBody* buffer, int length);
     void saveMessage(int shmid, const PacketBody& str);
     void copy(PacketBody* ptr, const PacketBody& str);
     void copy(PacketBody& str, const Notice& tmp);

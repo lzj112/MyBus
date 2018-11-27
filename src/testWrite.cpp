@@ -30,18 +30,15 @@ int main()
     MyBus station;
     BusCard* cardPtr = station.initChannelControl(10); //创建共享内存控制块及通信队列
     station.prepareSocket(sourceIP, sourcePort);
-
+    
     const char p[] = "i`m fine fuck u!!!!!!!!!! ?";
     int length = strlen(p) + 1;
 
     //跨物理机发送
-    ProComm tmp;
-    strcmp(tmp.destIP, destIP);
-    strcmp(tmp.sourceIP, sourceIP);
-    tmp.destPort = destPort;
-    tmp.sourcePort = sourcePort;
-    int ret = station.sendByNetwork(cardPtr, passIP, passPort, destPassIP, destPassPort, 
-                                        tmp, p);
+    ProComm tmp(sourceIP, sourcePort, passIP, passPort, destIP, 
+                destPort, destPassIP, destPassPort);
+
+    int ret = station.sendByNetwork(cardPtr, tmp, p, length);
 
    /* 
     本机测试

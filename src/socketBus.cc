@@ -14,7 +14,6 @@ void socketBus::startListening(const char* ip, int port)
 //向中转进程发送通知
 int socketBus::sendTo(const char* ip, int port, Notice buffer) 
 {  
-std::cout << "中转进程ip = " << ip << "端口 : "  << port << std::endl;
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     assert(sockfd != -1);
     struct sockaddr_in addr;
@@ -31,14 +30,12 @@ std::cout << "中转进程ip = " << ip << "端口 : "  << port << std::endl;
     {
         perror("sendto");
     }
-std::cout << "向中转进程发送通知fa song wanbi" << std::endl;
 }
 
 
 //跨物理器发送数据
 int socketBus::sendTo(const PacketBody& str, int connfd) 
 {
-std::cout << "跨物理机发送" << std::endl;
     //使用的阻塞socket
     int res = send(connfd, (void *)&str, sizeof(str), 0);
     return res;

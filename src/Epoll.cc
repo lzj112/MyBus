@@ -16,15 +16,6 @@ void Epoll::setNonblock(int fd)
     fcntl(fd, F_SETFL, new_option);
 }
 
-// void Epoll::Create(int fd) 
-// {
-//     epollFd = epoll_create(1); 
-//     listenFd = fd;
-//     setNonblock(listenFd);
-
-//     Add(listenFd, EPOLLIN);
-// }
-
 void Epoll::Create(int fdtcp, int fdudp) 
 {
     listenFd = fdtcp;
@@ -59,12 +50,10 @@ int Epoll::newConnect(int listenFd) //好像在accept阻塞了 不是用的非�
     //防止连接淤积
     while (1)
    { 
-    std::cout << "???connfd == " << connfd << std::endl;
         memset(&client, 0, cliLength);   
         connfd = accept(listenFd, (sockaddr *)&client, &cliLength); //读取新连接
         if (connfd <= 0) 
         {
-        std::cout << "has been broken" << std::endl;
             break;
         }
         else 
@@ -80,7 +69,6 @@ int Epoll::newConnect(int listenFd) //好像在accept阻塞了 不是用的非�
             perror("accept is wrong : ");
         }
     }
-std::cout << "新连接已经成功连接\n";
     return 0;
 }
 

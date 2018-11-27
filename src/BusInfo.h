@@ -6,6 +6,7 @@
 共享内存信息
 */
 
+#include <cstring>
 #include <sys/types.h>
 
 #define READ 0
@@ -33,10 +34,40 @@ struct BusCard
 //进程间通信需要的地址
 struct ProComm 
 {
-    char sourceIP[8];
+public:
+    char sourceIP[10];
     int sourcePort;
+    char destIP[10];
     int destPort;
-    char destIP[8];
+    char sourcePassIP[10];
+    int sourcePassPort;
+    char destPassIP[10];
+    int destPassPort;
+    ProComm(){
+    }
+    ProComm(const char* sourceIP, int sourcePort, const char* passIP, int passPort,
+            const char* destIP, int destPort, const char* destPassIP, int destPassPort)
+    {
+        strcpy(this->destIP, destIP);
+        strcpy(this->sourceIP, sourceIP);
+        strcpy(this->sourcePassIP, passIP);
+        strcpy(this->destPassIP, destPassIP);
+        this->destPort = destPort;
+        this->sourcePort = sourcePort;
+        this->sourcePassPort = passPort;
+        this->destPassPort = destPassPort;
+    }
+    ProComm& operator= (const ProComm& str) 
+    {
+        destPort = str.destPort;
+        sourcePort = str.sourcePort;
+        destPassPort = str.destPassPort;
+        sourcePassPort = str.sourcePassPort;
+        strcpy(destIP, str.destIP);
+        strcpy(sourceIP, str.sourceIP);
+        strcpy(destPassIP, str.destPassIP);
+        strcpy(sourcePassIP, str.sourcePassIP);
+    }
 };
 
 //进程间通信的结构
@@ -60,8 +91,6 @@ struct Notice
     struct PacketHead head;
     struct ProComm netQueaad;
     int shmid;      //buscard的shmid
-    char destPassIP[8];
-    int destPassPort;
 };
 
 //路由表
@@ -77,9 +106,9 @@ struct RoutingTable
 struct proToNetqueue 
 {   
     int shmSelfId;
-    char sourceIP[8];
+    char sourceIP[10];
     int sourcePort;
-    char destIP[8];
+    char destIP[10];
     int destPort;
     int readQueue;
     // int writeQueue;
