@@ -15,25 +15,11 @@
 #include <vector> 
 #include <thread>
 #include <mutex>
-using namespace std;
 
-class a 
-{
-public:
-    a(const char* p) 
-    {
-      strcpy(c, p);
-    }
-    int b;
-    char c[8];
-};
+#include "BusInfo.h"
+using namespace std;
 
 int main() 
 {
-    const char* p = "123456";
-    struct a tmp(p);
-    // struct a tmp;
-    tmp.b = 1;
-    // strcpy(tmp.c, p);
-    cout << tmp.c << endl;
+    cout << sizeof(PacketBody) << endl;
 }

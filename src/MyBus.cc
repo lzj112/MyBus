@@ -347,6 +347,7 @@ int MyBus::sendByNetwork(BusCard* card, const ProComm& str, const char* buffer, 
     tmp.head.type = READY;
     tmp.netQueaad = str;
     tmp.shmid = card->shmSelfId;
+    tmp.head.bodySzie = length;
 
     //向中转进程发送通知
     socketControl.sendTo(str.sourcePassIP, str.sourcePassPort, tmp);

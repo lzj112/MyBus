@@ -1,6 +1,7 @@
 #include <assert.h>
-#include <memory.h>
 #include <arpa/inet.h>
+#include <sys/shm.h>
+#include <memory.h>
 
 #include "socketBus.h" 
 #include "AllocPort.h"
@@ -11,7 +12,7 @@ void socketBus::startListening(const char* ip, int port)
     Listen(10);
 }
 
-//向中转进程发送通知
+//向本机中转进程发送通知
 int socketBus::sendTo(const char* ip, int port, Notice buffer) 
 {  
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -36,7 +37,7 @@ int socketBus::sendTo(const char* ip, int port, Notice buffer)
 //跨物理器发送数据
 int socketBus::sendTo(const PacketBody& str, int connfd) 
 {
-    //使用的阻塞socket
+std::cout << "向另一个物理机转发=" << str.buffer << std::endl;
     int res = send(connfd, (void *)&str, sizeof(str), 0);
     return res;
 }
@@ -49,6 +50,7 @@ int socketBus::makeNewConn(const char* destIP, int destPort)
     {
         sockfd = socket(AF_INET, SOCK_STREAM, 0);
         assert(sockfd != -1);
+        // setNonBlock(sockfd);
 
         //保证给中转进程提供唯一端口号
         struct sockaddr_in addr;
@@ -80,4 +82,13 @@ void socketBus::inform(const char* ip, int port, int id)
 
     int buffer = id;
     sendto(sockfd, (void *)&buffer, sizeof(buffer), 0, (struct sockaddr*)&addr, sizeof(addr));
+
+printf("海牙!\n");
+    proToNetqueue* t = static_cast<proToNetqueue *> (shmat(id, nullptr, 0));
+    if (t == (void *)-1) 
+    {
+        perror("asasasasas");
+    }
+    int id = t->netQueue[0];
+    printf("向本机通知%s已经到位\n", t->buffer);
 }
