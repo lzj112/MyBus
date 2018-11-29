@@ -36,8 +36,13 @@ int main()
     station.prepareSocket(sourceIP, sourcePort);
     
     char p[256];
-    station.recvFromNetwork(p);
-    cout << p << endl;
+    
+    while (1) 
+    {
+        station.recvFromNetwork(p);
+        cout << p << endl;
+        memset(p, 0, sizeof(p));
+    }
     // station.recvFromNetwork(sourceIP, sourcePort, p);
 
    /* 

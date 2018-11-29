@@ -19,7 +19,7 @@ int socketTCP::setNonBlock(int fd)
     return 0;
 }
 
-void socketTCP::initSocketfd() 
+void socketTCP::initSocketTCP() 
 {
     fdTCP = socket(AF_INET, SOCK_STREAM, 0);
     if (fdTCP == -1) 
@@ -29,10 +29,9 @@ void socketTCP::initSocketfd()
     setNonBlock(fdTCP);
 }
 
-void socketTCP::initSocketfd(int) 
+void socketTCP::initSocketUDP() 
 {
     fdUDP = socket(AF_INET, SOCK_DGRAM, 0);
-printf("there is init %d\n", fdUDP);
     if (fdUDP == -1) 
     {
         perror("socket fdudp");
@@ -46,7 +45,8 @@ int socketTCP::Bind(const char* ip, int port)
         std::cout << "ip is nullptr in Bind" << std::endl;
         return -1;
     }
-printf("bind ip == %s port = %d\n", ip, port);
+    printf("bind ip == %s port = %d\n", ip, port);
+
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
@@ -60,11 +60,6 @@ printf("bind ip == %s port = %d\n", ip, port);
         perror("bind fdtcp");
     }
 
-    // memset(&addr, 0, sizeof(addr));
-    // addr.sin_family = AF_INET;
-    // addr.sin_port = htons(port);
-    // inet_pton(AF_INET, ip, &addr.sin_addr);
-    // // addr.sin_addr.s_addr = INADDR_ANY;
     res = bind(fdUDP, (struct sockaddr*)&addr, sizeof(addr));
     if (res == -1) 
     {
@@ -98,7 +93,7 @@ int socketTCP::Connect(const char* ip, int port)
     if (res == -1) 
     {
         Close(fdTCP);
-        initSocketfd();
+        initSocketTCP();
         return -1;
     }
     

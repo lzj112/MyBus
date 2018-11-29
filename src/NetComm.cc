@@ -23,12 +23,12 @@ void NetComm::initList(int proj_id)
 
 void NetComm::prepareSocket(const char* ip, int port) 
 {
-    socketControl.initSocketfd();
-    socketControl.initSocketfd(1);
+    socketControl.initSocketTCP();
+    socketControl.initSocketUDP();
     socketControl.startListening(ip, port);
 
-    int tcpfd = socketControl.getMysockfd();
-    int udpfd = socketControl.getMysockfd(1);
+    int tcpfd = socketControl.getMysockTCP();
+    int udpfd = socketControl.getMysockUDP();
 
     myEpoll.Create(tcpfd, udpfd);
     myEpoll.Add(tcpfd, EPOLLIN);
@@ -60,12 +60,6 @@ int NetComm::initShmList(int id)  //初始化路由表
     netList[1] = 0;
     netList[2] = 0;
 
-    // if (netListHead_Addr == nullptr) 
-    // {
-    //     netListHead_Addr = static_cast<RoutingTable *> (shmat(netList, nullptr, 0));
-    //     memset(netListHead_Addr, 0, sizeof(RoutingTable));
-    // }
-
     return 0;
 }
 
@@ -89,11 +83,6 @@ int NetComm::initShmList(int id, int) //初始化中转通道
     }
     proList[1] = 0;
     proList[2] = 0;
-    // if (proListHead_Addr == nullptr) 
-    // {
-    //     proListHead_Addr = static_cast<proToNetqueue *> (shmat(proList, nullptr, 0));
-    //     memset(proListHead_Addr, 0, sizeof(proToNetqueue));
-    // }
 
     return 0;
 }
@@ -119,11 +108,6 @@ int NetComm::creShmQueue(int proj_id)
 //更新路由表
 int NetComm::updateList(int sockfd, const char* ip, int port) 
 {
-    /*
-    如果端口一样ip就一样,就是同一个连接,就不会存储进来
-    会直接用那个连接,所以port会是唯一的
-    */
-    //每个端口都唯一,这样保证了key唯一
     int front = netList[1];
     int rear = netList[2];
     RoutingTable* tmpAddr = static_cast<RoutingTable *> (shmat(netList[0], nullptr, 0)) + rear;
@@ -171,80 +155,6 @@ int NetComm::updateList(const struct ProComm& str)
     return rear;
 }
 
-// int NetComm::delListNode(int fd, const RoutingTable& str) 
-// {
-//     int shmidTmp = netListHead_Addr->shmidNext;
-//     //指向头结点的下一个节点
-//     RoutingTable* nodePtr = static_cast<RoutingTable *> (shmat(shmidTmp, nullptr, 0));
-
-//     RoutingTable* prePtr = netListHead_Addr;    //指向前一个节点
-//     while (1)
-//     {
-//         //该节点中sockfd就是目标值
-//         if (nodePtr->sockfd == fd) 
-//         {
-//             //前一个节点指向该节点下一个节点
-//             int tmp = prePtr->shmidNext;
-//             prePtr->shmidNext = nodePtr->shmidNext;
-
-//             //删除该节点
-//             int res = shmdt(nodePtr);
-//             res = shmctl(tmp, IPC_RMID, 0);
-//         }
-        
-//         //前一节点指向该节点
-//         prePtr = nodePtr;
-//         int nextId = nodePtr->shmidNext;
-//         RoutingTable* tmpAddr = nodePtr;
-//         if (nextId == 0) 
-//         {
-//             break;
-//         }
-//         //该指针指向下一块共享内存
-//         nodePtr = static_cast<RoutingTable *> (shmat(nextId, nullptr, 0));
-//         //解除该节点的内存映射
-//         shmdt(tmpAddr);
-//     }
-//     netListHead_Addr->listLength--;
-// }
-
-// int NetComm::delListNode(const char* ip, int port, const proToNetqueue& str) 
-// {
-//     int shmidTmp = proListHead_Addr->shmidNext;
-//     //指向头结点的下一个节点
-//     proToNetqueue* nodePtr = static_cast<proToNetqueue *> (shmat(shmidTmp, nullptr, 0));
-
-//     proToNetqueue* prePtr = proListHead_Addr;    //指向前一个节点
-//     while (1)
-//     {
-//         //该节点中sockfd就是目标值
-//         if ((strcmp(ip, nodePtr->destIP) == 0) && port == nodePtr->destPort) 
-//         {
-//             //前一个节点指向该节点下一个节点
-//             int tmp = prePtr->shmidNext;
-//             prePtr->shmidNext = nodePtr->shmidNext;
-
-//             //删除该节点
-//             int res = shmdt(nodePtr);
-//             res = shmctl(tmp, IPC_RMID, 0);
-//         }
-        
-//         //前一节点指向该节点
-//         prePtr = nodePtr;
-//         int nextId = nodePtr->shmidNext;
-//         proToNetqueue* tmpAddr = nodePtr;
-//         //该指针指向下一块共享内存
-//         if (nextId == 0) 
-//         {
-//             break;
-//         }
-//         nodePtr = static_cast<proToNetqueue *> (shmat(nextId, nullptr, 0));
-//         //解除该节点的内存映射
-//         shmdt(tmpAddr);
-//     }
-//     proListHead_Addr->listLength--;
-// }
-
 //从路由表获得连接sockfd
 int NetComm::isThereConn(const char* ip, int port) 
 {
@@ -253,7 +163,6 @@ int NetComm::isThereConn(const char* ip, int port)
     //指向头结点下一节点
     RoutingTable* nodePtr = static_cast<RoutingTable *> (shmat(netList[0], nullptr, 0)) + front;
 
-printf("get into 循环\n");
     int connfd = -1;
     for (int i = front;;) 
     {
@@ -269,7 +178,6 @@ printf("get into 循环\n");
         }         
         i = (i + 1) % QUEUESIZE;
     }
-printf("isthere conn is over and return %d\n", connfd);
 
     return connfd;
 }
@@ -282,13 +190,12 @@ int NetComm::getProShmQueue(const char* ip, int port, int flag)
     proToNetqueue* nodePtr = static_cast<proToNetqueue *> (shmat(proList[0], nullptr, 0)) + front;
     if (nodePtr == (void *)-1) 
     {
-        printf("prolist[0]===%d\n", proList[0]);
         perror("shmat ");
+        return -1;
     }
     int queueID = -1;
     for (int i = front; ;) 
     {
-    printf("循环了%d次\n", i);
         if (i == rear) 
         {
             break ;
@@ -301,15 +208,14 @@ int NetComm::getProShmQueue(const char* ip, int port, int flag)
         }
         i = (i + 1) % QUEUESIZE;
     }
-printf("over!!!!!!!!!!!!!\n");
     return queueID;
 }
 
 
 void NetComm::runMyEpoll() 
 {
-    int tcpfd = socketControl.getMysockfd();
-    int udpfd = socketControl.getMysockfd(1);
+    int tcpfd = socketControl.getMysockTCP();
+    int udpfd = socketControl.getMysockUDP();
     signal(SIGPIPE, SIG_IGN);   //忽略sigpipe
     
     int ret;
@@ -320,30 +226,23 @@ void NetComm::runMyEpoll()
         myEpoll.Wait(ret, events);
         for (int i = 0; i < ret; i++) 
         {
-            // if (events[i].data.fd == udpfd) //本机发来的udp通知
-            // {
-            // std::cout << "收到本机udp通知\n" << std::endl;
-            //     int connfd = events[i].data.fd;
-            //     std::thread t(&NetComm::recvFromUDP, this, connfd);
-            //     t.detach();
-            // }
             if (events[i].events & EPOLLIN) 
             {
                 if (events[i].data.fd == udpfd) //本机发来的udp通知
             {
-            std::cout << "收到本机udp通知\n" << std::endl;
+                std::cout << "收到本机udp通知\n" << std::endl;
                 int connfd = events[i].data.fd;
                 std::thread t(&NetComm::recvFromUDP, this, connfd);
                 t.detach();
             }
                 else if (events[i].data.fd == tcpfd) 
                 {
-            std::cout << "有别的物理机的连接的请求\n" << std::endl;
+                    std::cout << "有别的物理机的连接的请求\n" << std::endl;
                     myEpoll.newConnect(tcpfd);
                 }
                 else 
                 {
-            std::cout << "读取别的物理机发来的消息\n" << std::endl;
+                    std::cout << "读取别的物理机发来的消息\n" << std::endl;
                     int connfd = events[i].data.fd;
                     std::thread t(&NetComm::recvFromTCP, this, connfd);
                     t.detach();
@@ -358,7 +257,7 @@ int NetComm::getMessage(int connfd, PacketBody* buffer, int length)
 {
     int count = length;
     int ret = 0;
-    while (count > 0) 
+    while (count > 0) //循环读取直到读完指定字节或出错
     {
         ret = recv(connfd, buffer, length, 0);
         if (ret == -1) 
@@ -465,28 +364,22 @@ void NetComm::recvFromTCP(int connfd)
 
 void NetComm::dealData(int connfd, const PacketBody& tmpBuffer) 
 {
-printf("1\n");
     //获取接收此消息的共享内存缓冲区(proToNetqueue)
     int proShmid = getProShmQueue(tmpBuffer.netQuaad.destIP, tmpBuffer.netQuaad.destPort, WRITE); 
     if (proShmid == -1) 
     {
-printf("2\n");
         //如果没有该缓冲区,创建一个
         proShmid = updateList(tmpBuffer.netQuaad);
     }
-printf("4\n");
     //shmid中获取写队列 写入数据 
     saveMessage(proShmid, tmpBuffer);
     //若是一个新的连接 更新路由表
-printf("5\n");
     int netShmid = isThereConn(tmpBuffer.netQuaad.sourcePassIP, tmpBuffer.netQuaad.sourcePassPort);
     if (netShmid == -1) 
     {
-printf("6\n");
         //路由表中没有这个链接,将发送端ip和端口保存
         updateList(connfd, tmpBuffer.netQuaad.sourcePassIP, tmpBuffer.netQuaad.sourcePassPort);    
     }
-printf("7\n");
 
     //告知进程共享内存通道偏移量
     //收到跨机器发来的消息并存入共享内存后,通知本机进程通道表共享内存id
@@ -519,15 +412,15 @@ void NetComm::forwarding(const Notice& str)
     PacketBody tmp;
     copy(tmp, str);
     
-// printf("1\n");
     int connfd = isThereConn(str.netQueaad.destPassIP, str.netQueaad.destPassPort);
     if (connfd == -1) 
     {
-    // printf("2\n");
         connfd = socketControl.makeNewConn(str.netQueaad.destPassIP, str.netQueaad.destPassPort);
-    // printf("3\n");
         updateList(connfd, str.netQueaad.destPassIP, str.netQueaad.destPassPort);
     }
-// printf("连接 = %d\n", connfd);
+    else 
+    {
+        printf("使用已有连接%d\n", connfd);
+    }
     socketControl.sendTo(tmp, connfd);
 }

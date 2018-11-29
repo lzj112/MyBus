@@ -50,7 +50,7 @@ std::cout << "向另一个物理机转发=" << str.buffer << std::endl;
 //接收收到跨物理机发送的消息后中转udp通知本进程
 void socketBus::recvFrom(int* buf, int length) 
 {
-    int udpfd = getMysockfd(1); 
+    int udpfd = getMysockUDP(); 
 
     recvfrom(udpfd, buf, length, 0, nullptr, nullptr);
     perror("recvfrom ");

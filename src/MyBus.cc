@@ -112,7 +112,7 @@ int MyBus::initShmQueue(BusCard* card)
         {
             perror("shmat is error");
         }
-        // memset(tmpAddr, 0, sizeof(PacketBody) * QUEUESIZE);
+        memset(tmpAddr, 0, sizeof(PacketBody) * QUEUESIZE);
         shmdt(tmpAddr);
         if (i == 2) 
         {
@@ -153,8 +153,8 @@ void* MyBus::getLocalQueue(BusCard* cardPtr, int flag) //flag=0期望读队列,=
 
 void MyBus::prepareSocket(const char* ip, int port) 
 {
-    socketControl.initSocketfd();
-    socketControl.initSocketfd(1);
+    socketControl.initSocketTCP();
+    socketControl.initSocketUDP();
     socketControl.startListening(ip, port);
 }
 
