@@ -26,7 +26,7 @@ int destPassPort = 4096;
 //目标进程ip 端口
 const char* destIP = "127.0.0.1";
 int destPort = 4098;
-
+////dasdfasd
 
 int shmid = 5275659;
 int main() 
@@ -36,8 +36,9 @@ int main()
     station.prepareSocket(sourceIP, sourcePort);
     
     char p[256];
-
     station.recvFromNetwork(p);
+    cout << p << endl;
+    // station.recvFromNetwork(sourceIP, sourcePort, p);
 
    /* 
     while (1)
@@ -52,4 +53,5 @@ int main()
         sleep(1);
     }
     */
+//    station.releaseAll(cardPtr);
 }

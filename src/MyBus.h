@@ -12,7 +12,7 @@
 #include "socketBus.h"
 // #include "NetComm.h"
 
-
+///
 /* 
 进程间通信组件
 */
@@ -37,12 +37,13 @@ class MyBus
     char* getLocalIP();
     int sendToLocal(BusCard* cardPtr, const char* buffer, int length);    //收发数据
     int recvFromLocal(BusCard* cardPtr, char* buffer, int length);
-    int sendByNetwork(BusCard* card, const struct ProComm& str, const char* buffer, int length);
-    int recvFromNetwork(/*const char* passIP, int passPort, */const char* buffer);
+    void sendByNetwork(BusCard* card, const struct ProComm& str, const char* buffer, int length);
+    int recvFromNetwork(/*const char* ip, int port,*/char* buffer);  //////
     void saveLocalMessage(BusCard* card, const char* buffer);
-
+    void release(int shmid);
+    void releaseAll(BusCard* card);
   private:
-    char* getPath(char *buffer, size_t size);                //使用ftok创建key
+    void getPath(char *buffer, size_t size);                //使用ftok创建key
     int getQueueFront(BusCard* cardPtr, int flag);           //队列操作
     int getQueueRear(BusCard* cardPtr, int flag);
 

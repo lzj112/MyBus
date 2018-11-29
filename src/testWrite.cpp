@@ -38,7 +38,7 @@ int main()
     ProComm tmp(sourceIP, sourcePort, passIP, passPort, destIP, 
                 destPort, destPassIP, destPassPort);
 
-    int ret = station.sendByNetwork(cardPtr, tmp, p, length);
+    station.sendByNetwork(cardPtr, tmp, p, length);
 
    /* 
     本机测试
@@ -50,5 +50,5 @@ int main()
         sleep(1);
     }
     */
-   
+//    station.releaseAll(cardPtr);
 }

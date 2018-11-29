@@ -32,6 +32,7 @@ void socketTCP::initSocketfd()
 void socketTCP::initSocketfd(int) 
 {
     fdUDP = socket(AF_INET, SOCK_DGRAM, 0);
+printf("there is init %d\n", fdUDP);
     if (fdUDP == -1) 
     {
         perror("socket fdudp");
@@ -51,7 +52,6 @@ printf("bind ip == %s port = %d\n", ip, port);
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
     inet_pton(AF_INET, ip, &addr.sin_addr);
-
     int optval = 1;
     setsockopt(fdTCP, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval));
     int res = bind(fdTCP, (struct sockaddr*)&addr, sizeof(addr));
@@ -60,6 +60,11 @@ printf("bind ip == %s port = %d\n", ip, port);
         perror("bind fdtcp");
     }
 
+    // memset(&addr, 0, sizeof(addr));
+    // addr.sin_family = AF_INET;
+    // addr.sin_port = htons(port);
+    // inet_pton(AF_INET, ip, &addr.sin_addr);
+    // // addr.sin_addr.s_addr = INADDR_ANY;
     res = bind(fdUDP, (struct sockaddr*)&addr, sizeof(addr));
     if (res == -1) 
     {
@@ -68,6 +73,7 @@ printf("bind ip == %s port = %d\n", ip, port);
     
     return 0;
 }
+
 
 int socketTCP::Listen(int backlog) 
 {

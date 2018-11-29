@@ -25,7 +25,6 @@ struct BusCard
 {
     key_t ftokKey;             //ftok的key
     int shmSelfId;             //本身这块共享内存的id
-    int proChannelID;          //本机进程通道表节点shmid
     int localQueue[3][3];      //本机通信队列
     int netQueue[3];           //跨机队列,发送缓冲区   
 };
@@ -59,6 +58,10 @@ public:
     }
     ProComm& operator= (const ProComm& str) 
     {
+        if (&str == this) 
+        {
+            return *this;
+        }
         destPort = str.destPort;
         sourcePort = str.sourcePort;
         destPassPort = str.destPassPort;
@@ -67,6 +70,8 @@ public:
         strcpy(sourceIP, str.sourceIP);
         strcpy(destPassIP, str.destPassIP);
         strcpy(sourcePassIP, str.sourcePassIP);
+
+        return *this;
     }
 };
 
@@ -99,21 +104,21 @@ struct RoutingTable
     char IP[8];
     int port;
     int sockfd;
+    int listLength;
     int shmidNext;
 };
 
 //MyBus中转进程中存储的各进程与其共享内存通道的对应
 struct proToNetqueue 
 {   
-    int shmSelfId;
-    char sourceIP[10];
-    int sourcePort;
-    char destIP[10];
+    // int shmSelfId;
+    int offset;
+    char sourceIP[10];  //本机中转进程ip por
+    int sourcePort;         
+    char destIP[10];    //对端中转进程ip port
     int destPort;
-    int readQueue;
-    // int writeQueue;
-    int netQueue[2];        //进程通道的头尾指针
-    
+    int readQueue[3];
+    int listLength;
     int shmidNext;
 };
 

@@ -15,12 +15,6 @@ public:
     socketTCP() : fdTCP(-1), fdUDP(-1){}
     virtual ~socketTCP() 
     {
-        //要让中转进程显示close
-        // int res = Close(my_sockfd);
-        // if (res == -1) 
-        // {
-        //     std::cout << "~socketTCP is failed" << std::endl;
-        // }
     }
     int getMysockfd() 
     {

@@ -25,11 +25,9 @@ MyBus::~MyBus()
 }
 
 //获取当前工作目录
-char *MyBus::getPath(char *buffer, size_t size)
+void MyBus::getPath(char *buffer, size_t size)
 {
     buffer = getcwd(buffer, size);
-
-    return buffer; //getcwd失败返回的也是nullptr
 }
 
 //ftok获得key
@@ -41,7 +39,7 @@ key_t MyBus::getKey(int proj_id, char *in_case_path)
         strcpy(buffer, in_case_path);
     }
 
-    char *path = getPath(buffer, (size_t)50);
+    getPath(buffer, (size_t)50);
     
     key_t keyTmp = ftok(buffer, proj_id); //获得key
     if (keyTmp == -1)
@@ -99,8 +97,8 @@ int MyBus::initShmQueue(BusCard* card)
     for (int i = 0; i < 3; i++) 
     {
         int keyTmp = (card->ftokKey >> 16) + i;  //防止重复
-        int key_ = getKey(keyTmp);
-        int shmid = shmget(keyTmp, sizeof(PacketBody) * QUEUESIZE, IPC_CREAT | 0666);
+        int key = getKey(keyTmp);
+        int shmid = shmget(key, sizeof(PacketBody) * QUEUESIZE, IPC_CREAT | 0666);
         if (shmid == -1) 
         {
             shmid = shmget(keyTmp, 0, 0);
@@ -167,7 +165,6 @@ int MyBus::getQueueFront(BusCard* cardPtr, int flag)
         return -1;
     }
     
-    int shmid;
     int front;
     int pid = (int)getpid();
     if (pid == cardPtr->localQueue[0][2]) //是创建队列的进程
@@ -188,7 +185,6 @@ int MyBus::getQueueRear(BusCard* cardPtr, int flag)
     {
         return -1;
     }
-    int shmid;
     int rear;
     int pid = (int)getpid();
     if (pid == cardPtr->localQueue[0][2]) //是创建队列的进程
@@ -286,6 +282,7 @@ int MyBus::sendToLocal(BusCard* cardPtr, const char* buffer, int length)
         addQueueRear(cardPtr, WRITE);   //移动队尾指针
     }
     shmdt(destPtr);
+    return 0;
 }
 
 int MyBus::recvFromLocal(BusCard* cardPtr, char* buffer, int length) 
@@ -312,6 +309,7 @@ int MyBus::recvFromLocal(BusCard* cardPtr, char* buffer, int length)
 
     }
     shmdt(sourcePtr);
+    return 0;
 }
 
 void MyBus::saveLocalMessage(BusCard* card, const char* buffer) 
@@ -338,7 +336,7 @@ void MyBus::saveLocalMessage(BusCard* card, const char* buffer)
 }
 
 
-int MyBus::sendByNetwork(BusCard* card, const ProComm& str, const char* buffer, int length)
+void MyBus::sendByNetwork(BusCard* card, const ProComm& str, const char* buffer, int length)
 {
     //存储进共享内存发送缓冲区
     saveLocalMessage(card, buffer);
@@ -351,21 +349,15 @@ int MyBus::sendByNetwork(BusCard* card, const ProComm& str, const char* buffer, 
 
     //向中转进程发送通知
     socketControl.sendTo(str.sourcePassIP, str.sourcePassPort, tmp);
+
 }
 
 
-int MyBus::recvFromNetwork(/*const char* passIP, int passPort, */const char* buffer) 
+int MyBus::recvFromNetwork(/*const char* ip, int port,*/char* buffer) 
 {
-    int buf;
-    int udpfd = socketControl.getMysockfd(1);
-    int ret = recvfrom(udpfd, (void *)&buf, sizeof(int), 0, nullptr, nullptr);
-    if (ret < 0) 
-    {
-        perror("recvfrom is wrong");
-        return -1;
-    }
-
-    proToNetqueue* tmpAddr = static_cast<proToNetqueue *> (shmat(buf, nullptr, 0));
+    int buf[2] = {0};
+    socketControl.recvFrom(buf, sizeof(buf));
+    proToNetqueue* tmpAddr = static_cast<proToNetqueue *> (shmat(buf[0], nullptr, 0)) + buf[1];
     if (tmpAddr == (void *)-1) 
     {
         perror("shmat in recvfrom");
@@ -373,16 +365,45 @@ int MyBus::recvFromNetwork(/*const char* passIP, int passPort, */const char* buf
     }
 
     //empty queue
-    if (tmpAddr->netQueue[0] == tmpAddr->netQueue[1]) 
+    if (tmpAddr->readQueue[2] == tmpAddr->readQueue[1]) 
     {
         shmdt(tmpAddr);
     }
     else 
     {
-        PacketBody* tmpBuf = static_cast<PacketBody *> (shmat(tmpAddr->readQueue, nullptr, 0));
-        strcmp(buffer, tmpBuf->buffer);
-        tmpAddr->netQueue[0] = (tmpAddr->netQueue[0] + 1) % QUEUESIZE;
+    printf("queue is not empty : %d\n", tmpAddr->readQueue[0]);
+        PacketBody* tmpBuf = static_cast<PacketBody *> (shmat(tmpAddr->readQueue[0], nullptr, 0));
+        if (tmpBuf == (void *)-1) perror("readqueue id is wrong\n");
+        strcpy(buffer, tmpBuf->buffer);
+        tmpAddr->readQueue[1] = (tmpAddr->readQueue[1] + 1) % QUEUESIZE;
         shmdt(tmpBuf);
         shmdt(tmpAddr);
+    }
+    return 0;
+}
+
+void MyBus::release(int shmid) 
+{
+    int res = shmctl(shmid, IPC_RMID, nullptr);
+    if (res == -1) 
+    {
+        perror("release is wrong");
+    }
+}
+
+void MyBus::releaseAll(BusCard* card) 
+{
+    int id[4];
+    id[0] = card->shmSelfId;
+    id[1] = card->localQueue[0][0];
+    id[2] = card->localQueue[0][1];
+    id[3] = card->netQueue[0];
+    for (int i = 3; i >= 0; i--) 
+    {
+        int res = shmctl(id[i], IPC_RMID, nullptr);
+        if (res == -1) 
+        {
+            perror("releaseAll ");
+        }
     }
 }

@@ -11,7 +11,7 @@ int main()
 {
     NetComm plane;
 
-    plane.initList();
+    plane.initList(2);
     plane.prepareSocket(ip, port);
     plane.runMyEpoll();
 
