@@ -419,3 +419,13 @@ void NetComm::forwarding(const Notice& str)
     }
     socketControl.sendTo(tmp, connfd);
 }
+
+void NetComm::realseAll() 
+{
+    shmctl(netList[0], IPC_RMID, nullptr);
+
+    proToNetqueue* tmpAddr = static_cast<proToNetqueue *> (shmat(proList[0], nullptr, 0));
+    shmctl(tmpAddr->readQueue[0], IPC_RMID, nullptr);
+    shmdt(tmpAddr);
+    shmctl(proList[0], IPC_RMID, nullptr);
+}
