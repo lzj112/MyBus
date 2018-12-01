@@ -108,10 +108,10 @@ int NetComm::creShmQueue(int proj_id)
 //更新路由表
 int NetComm::updateList(int sockfd, const char* ip, int port) 
 {
-    int front = netList[1];
-    int rear = netList[2];
-    RoutingTable* tmpAddr = static_cast<RoutingTable *> (shmat(netList[0], nullptr, 0)) + rear;
-    if ((rear + 1) % QUEUESIZE == front) 
+// printf("参数 in updatelist ip = %s port = %d***\n", ip, port);
+// printf("befor update RoutingTable front = %d rear = %d\n", netList[1], netList[2]);
+    RoutingTable* tmpAddr = static_cast<RoutingTable *> (shmat(netList[0], nullptr, 0)) + netList[2];
+    if ((netList[2] + 1) % QUEUESIZE == netList[1]) 
     {
         return -1;
     }
@@ -120,7 +120,9 @@ int NetComm::updateList(int sockfd, const char* ip, int port)
     tmpAddr->sockfd = sockfd;
     tmpAddr->port = port;
     strcpy(tmpAddr->IP, ip);
+// printf("RoutingTable更新后ip = %s port = %d\n", tmpAddr->IP, tmpAddr->port);
     netList[2]  = (netList[2] + 1) % QUEUESIZE;   //尾加一
+// printf("after update RoutingTable front = %d rear = %d\n", netList[1], netList[2]);
 
     shmdt(tmpAddr);
 
@@ -158,15 +160,16 @@ int NetComm::updateList(const struct ProComm& str)
 //从路由表获得连接sockfd
 int NetComm::isThereConn(const char* ip, int port) 
 {
-    int front = netList[1];
-    int rear = netList[2];
+// printf("参数 in isthereconn ip = %s port = %d---\n", ip, port);
+// printf("RoutingTable : front + %d rear = %d\n", netList[1], netList[2]);
     //指向头结点下一节点
-    RoutingTable* nodePtr = static_cast<RoutingTable *> (shmat(netList[0], nullptr, 0)) + front;
+    RoutingTable* nodePtr = static_cast<RoutingTable *> (shmat(netList[0], nullptr, 0)) + netList[1];
 
     int connfd = -1;
-    for (int i = front;;) 
+    for (int i = netList[1];;) 
     {
-        if (rear == i) 
+    // printf("RoutingTable中的节点: ip = %s port = %d\n", (nodePtr+i)->IP, (nodePtr+i)->port);
+        if (netList[2] == i) 
         {
             break;
         }   
@@ -185,18 +188,16 @@ int NetComm::isThereConn(const char* ip, int port)
 //从进程通道表获得对应表项
 int NetComm::getProShmQueue(const char* ip, int port, int flag) 
 {
-    int front = proList[1];
-    int rear = proList[2];
-    proToNetqueue* nodePtr = static_cast<proToNetqueue *> (shmat(proList[0], nullptr, 0)) + front;
+    proToNetqueue* nodePtr = static_cast<proToNetqueue *> (shmat(proList[0], nullptr, 0)) + proList[1];
     if (nodePtr == (void *)-1) 
     {
         perror("shmat ");
         return -1;
     }
     int queueID = -1;
-    for (int i = front; ;) 
+    for (int i = proList[1]; ;) 
     {
-        if (i == rear) 
+        if (i == proList[2]) 
         {
             break ;
         }
@@ -388,13 +389,6 @@ void NetComm::dealData(int connfd, const PacketBody& tmpBuffer)
 
 }
 
-
-/*
-
-测试至此 inform函数, proshmid是进程通道表的shmid, 
-
-*/
-
 void NetComm::recvFromUDP(int connfd) 
 {
     Notice tmpBuffer;
@@ -417,6 +411,7 @@ void NetComm::forwarding(const Notice& str)
     {
         connfd = socketControl.makeNewConn(str.netQueaad.destPassIP, str.netQueaad.destPassPort);
         updateList(connfd, str.netQueaad.destPassIP, str.netQueaad.destPassPort);
+        printf("建立新连接%d\n", connfd);
     }
     else 
     {

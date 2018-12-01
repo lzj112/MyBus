@@ -10,7 +10,6 @@
 
 using namespace std;
 
-
 //本机IP 端口
 const char* sourceIP = "127.0.0.1";
 int sourcePort = 4099;
@@ -37,6 +36,7 @@ int main()
     
     char p[256];
     
+    //跨物理机发送
     while (1) 
     {
         station.recvFromNetwork(p);

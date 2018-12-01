@@ -52,6 +52,7 @@ void socketBus::recvFrom(int* buf, int length)
 {
     int udpfd = getMysockUDP(); 
 
+    errno = 0;
     recvfrom(udpfd, buf, length, 0, nullptr, nullptr);
     perror("recvfrom ");
 }

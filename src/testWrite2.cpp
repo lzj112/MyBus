@@ -10,7 +10,7 @@ using namespace std;
 
 //本机IP 端口
 const char* sourceIP = "127.0.0.1";
-int sourcePort = 4098;
+int sourcePort = 5000;
 
 //本机中转进程IP 端口
 const char* passIP = "127.0.0.1";
@@ -31,7 +31,7 @@ int main()
     BusCard* cardPtr = station.initChannelControl(10); //创建共享内存控制块及通信队列
     station.prepareSocket(sourceIP, sourcePort);
     
-    const char p[] = "hello world ?";
+    const char p[] = "i`m the another one !!!!!!!!!!!!!";
     int length = strlen(p) + 1;
 
     //跨物理机发送

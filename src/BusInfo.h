@@ -101,7 +101,7 @@ struct Notice
 //路由表
 struct RoutingTable 
 {
-    char IP[8];
+    char IP[10];
     int port;
     int sockfd;
     int listLength;
