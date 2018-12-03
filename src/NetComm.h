@@ -15,46 +15,30 @@
 #include "BusInfo.h"
 #include "socketBus.h"
 #include "RouTabMgt.h"
+#include "ProTabMgt.h"
 
 class NetComm 
 {
 public:
     
-    NetComm() : isRun(true)
-    {}
-
+    NetComm() : isRun(true){}
     void initList(int proj_id);
-    // int initNetShmList(int id);                              //初始化链表头结点
-    int initProShmList(int id);
-    // int updateList(int sockfd, const char* ip, int port);
-    int updateList(const struct ProComm& str);
-    int creShmQueue(int proj_id);
-    // int isThereConn(const char* ip, int port);
-    int getProShmQueue(const char* ip, int port, int flag);
-    void realseAll();
-
-    //在这里运行epoll run,读取数据拿出来让NetComm做
     void prepareSocket(const char* ip, int port);
     void runMyEpoll();
     void recvFromTCP(int confd);
     void recvFromUDP(int connfd);
     int getMessage(int connfd, PacketBody* buffer, int length);
     void saveMessage(int shmid, const PacketBody& str);
-    void copy(PacketBody* ptr, const PacketBody& str);
     void copy(PacketBody& str, const Notice& tmp);
     void dealData(int connfd, const PacketBody& tmpbuffer);
     void forwarding(const Notice& str);
-    void realseAll(NetComm* str);
-
 
 private:
     Epoll myEpoll;
     socketBus socketControl;    //socket TCP连接
     
-    // int netList[3];             //路由表 RoutingTable
-    RouTabMgt netList;
-    
-    int proList[3];             //进程通道proToNetQueue
+    RouTabMgt netList;  //路由表
+    ProTabMgt proList;  //进程通道表
 
     bool isRun;
     std::mutex my_lock;

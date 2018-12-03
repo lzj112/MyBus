@@ -15,8 +15,8 @@
 #define WRITE 1
 #define READY 3
 #define PATH "/home/lzj/MyBus"
-// #define QUEUESIZE 256
-#define QUEUESIZE 11
+#define QUEUESIZE 256
+// #define QUEUESIZE 11
 #define PacketBodyBufferSize 256
 
 /*
@@ -114,9 +114,9 @@ struct RoutingTable
 struct proToNetqueue 
 {   
     int offset;
-    char sourceIP[10];  //本机中转进程ip por
+    char sourceIP[10];  //本机接收进程ip por
     int sourcePort;         
-    char destIP[10];    //对端中转进程ip port
+    char destIP[10];    //对端发送进程ip port
     int destPort;
     int readQueue[3];
 };

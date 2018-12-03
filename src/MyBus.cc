@@ -371,8 +371,7 @@ int MyBus::recvFromNetwork(/*const char* ip, int port,*/char* buffer)
     }
     else 
     {
-    printf("queue is not empty : %d\n", tmpAddr->readQueue[0]);
-        PacketBody* tmpBuf = static_cast<PacketBody *> (shmat(tmpAddr->readQueue[0], nullptr, 0));
+        PacketBody* tmpBuf = static_cast<PacketBody *> (shmat(tmpAddr->readQueue[0], nullptr, 0)) + tmpAddr->readQueue[1];
         if (tmpBuf == (void *)-1) perror("readqueue id is wrong\n");
         strcpy(buffer, tmpBuf->buffer);
         tmpAddr->readQueue[1] = (tmpAddr->readQueue[1] + 1) % QUEUESIZE;
