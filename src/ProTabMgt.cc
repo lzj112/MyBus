@@ -1,5 +1,6 @@
 #include <sys/shm.h>
 
+#include "socketBus.h"
 #include "ProTabMgt.h" 
 
 int ProTabMgt::initProShmList(int id) //初始化中转通道
@@ -26,6 +27,16 @@ int ProTabMgt::initProShmList(int id) //初始化中转通道
     return 0;
 }
 
+int ProTabMgt::initTime(int firstTime, int interval) 
+{
+    return timing.startTimerfd(firstTime, interval);
+}
+
+int ProTabMgt::getTimerfd() 
+{
+    return timing.getTimerfd();
+}
+
 int ProTabMgt::creShmQueue(int proj_id) 
 {
     key_t key = ftok(PATH, proj_id);
@@ -43,13 +54,13 @@ int ProTabMgt::creShmQueue(int proj_id)
     return shmid;
 }
 
-//路由表节点存储的是对端中转进程和发往的本端目标进程的ip port
+//进程通道表节点存储的是对端中转进程和发往的本端目标进程的ip port
 int ProTabMgt::updateList(const struct ProComm& str) 
 {
     std::lock_guard<std::mutex> locker(myLock);
     int rear = proTabList[2];
     proToNetqueue* tmpAddr = static_cast<proToNetqueue *> (shmat(proTabList[0], nullptr, 0)) + proTabList[2];
-    if ((proTabList[2] + 1) % QUEUESIZE == proTabList[1]) 
+    if ((proTabList[2] + 1) % QUEUESIZE == proTabList[1])  //通道表满,放弃新的进程通信
     {
         return -1;
     }
@@ -135,6 +146,28 @@ void ProTabMgt::saveMessage(int offset, const PacketBody& str)
     PacketBody* queueAddr = (static_cast<PacketBody *> (shmat(tmpAddr->readQueue[0], nullptr, 0))) + rear;
     copy(queueAddr, str);
     tmpAddr->readQueue[2] = (tmpAddr->readQueue[2] + 1) % QUEUESIZE;
+}
+
+void ProTabMgt::check() 
+{
+    socketBus::readTime(timing.getTimerfd());
+    if (((proTabList[2] - proTabList[1] + QUEUESIZE) % QUEUESIZE) >= 
+        (QUEUESIZE - 10))   //如果路由表剩余空间只剩下不足十个位置
+    {
+        reOrder();
+    }  
+}
+
+void ProTabMgt::reOrder() 
+{
+    std::lock_guard<std::mutex> locker(myLock);
+   
+    proToNetqueue* tmpAddr = static_cast<proToNetqueue *> (shmat(proTabList[0], nullptr, 0)) + proTabList[1];
+    int front = proTabList[1];
+    int rear = proTabList[2];
+    int size = ((rear - front + QUEUESIZE) % QUEUESIZE) / 2;
+    // memset(tmpAddr, 0, size);
+    proTabList[1] = (proTabList[1] + size) % QUEUESIZE;
 }
 
 

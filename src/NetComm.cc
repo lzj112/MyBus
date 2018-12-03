@@ -14,23 +14,39 @@
 
 void NetComm::initList(int proj_id) 
 {
-    int res = netList.initNetShmList(proj_id);
+    int res = netList.initNetShmList(proj_id);  //初始化路由表
     if (res == -1) 
     {
         printf("netlist init is wrong\n");
         return ;
     }
-    res = netList.initTime();   //初始化定时器
+    res = netList.initTime(30, 60);   //初始化定时器 
     if (res == -1) 
     {
         printf("time init is wrong\n");
         return ;
     }
-    res = proList.initProShmList(proj_id);
+    else 
+    {
+        myEpoll.Add(res, EPOLL_CTL_ADD);
+    }
+
+
+    res = proList.initProShmList(proj_id);  //初始化进程通道表
     if (res == -1) 
     {
         printf("prolist init is wrong\n");
         return ;
+    }
+    res = proList.initTime(30, 180);      //初始化定时器
+    if (res == -1) 
+    {
+        printf("time init is wrong\n");
+        return ;
+    }
+    else 
+    {
+        myEpoll.Add(res, EPOLL_CTL_ADD);
     }
 }
 
@@ -52,13 +68,15 @@ void NetComm::runMyEpoll()
 {
     int tcpfd = socketControl.getMysockTCP();
     int udpfd = socketControl.getMysockUDP();
+    int netTimefd = netList.getTimerfd();
+    int proTimefd = proList.getTimerfd();
+
     signal(SIGPIPE, SIG_IGN);   //忽略sigpipe
     
     int ret;
     epoll_event events[FDNUMBER];
-    bool isTimeOut = false;
-    int timefd = netList.getTimerfd();
-    myEpoll.Add(timefd, EPOLL_CTL_ADD);
+    bool isNetTimeOut = false;
+    bool isProTimeOut = false;
     while (isRun) 
     {
         ret = 0;
@@ -79,9 +97,13 @@ void NetComm::runMyEpoll()
                     std::cout << "有别的物理机的连接的请求\n" << std::endl;
                     myEpoll.newConnect(tcpfd);
                 }
-                else if (events[i].data.fd == timefd) //先标记
+                else if (events[i].data.fd == netTimefd) //定时事件先标记
                 {
-                    isTimeOut = true;
+                    isNetTimeOut = true;
+                }
+                else if (events[i].data.fd == proTimefd) 
+                {
+                    
                 }
                 else 
                 {
@@ -91,10 +113,15 @@ void NetComm::runMyEpoll()
                     t.detach();
                 }
             }
-            if (isTimeOut) //最后处理定时任务,优先级不高
+            if (isNetTimeOut) //最后处理定时任务,优先级不高
             {
-                isTimeOut = false;
+                isNetTimeOut = false;
                 netList.check();    //检查路由表满了么
+            }
+            if (isProTimeOut) 
+            {
+                isProTimeOut = false;
+                proList.check();    //检查进程通道表满了么
             }
         }
     }

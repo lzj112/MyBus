@@ -11,7 +11,7 @@ class RouTabMgt
 public:
     ~RouTabMgt();
     //初始化定时器
-    int initTime();
+    int initTime(int firstTime, int interval);
     int getTimerfd();
     //初始化路由表
     int initNetShmList(int id);

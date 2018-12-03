@@ -12,7 +12,7 @@ class Timer
 {
 public:
     Timer() : clock(-1){}
-    int startTimerfd() 
+    int startTimerfd(int firstTime, int interval) 
     {
 
         struct itimerspec new_value;
@@ -25,10 +25,10 @@ public:
             return -1;
         }
 
-        new_value.it_value.tv_sec = now.tv_sec + 30;    //第一次到期时间
+        new_value.it_value.tv_sec = now.tv_sec + firstTime;    //第一次到期时间
         new_value.it_value.tv_nsec = now.tv_nsec;
 
-        new_value.it_interval.tv_sec = 60;  //z之后每次到期的时间间隔
+        new_value.it_interval.tv_sec = interval;  //z之后每次到期的时间间隔
         new_value.it_interval.tv_nsec = 0;
 
         clock = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK);    //创建定时器
@@ -48,10 +48,6 @@ public:
     int getTimerfd() 
     {
         return clock;
-    }
-    void func() 
-    {
-        close(clock);
     }
 
 private:

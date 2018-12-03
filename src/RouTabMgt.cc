@@ -10,9 +10,9 @@ RouTabMgt::~RouTabMgt()
     shmctl(rouTabList[0], IPC_RMID, nullptr);
 }
 
-int RouTabMgt::initTime() 
+int RouTabMgt::initTime(int firstTime, int interval) 
 {
-    return timing.startTimerfd();
+    return timing.startTimerfd(firstTime, interval);
 }
 
 int RouTabMgt::getTimerfd() 
@@ -146,7 +146,7 @@ void RouTabMgt::reOrder()
     int front = rouTabList[1];
     int rear = rouTabList[2];
     int size = ((rear - front + QUEUESIZE) % QUEUESIZE) / 2;
-    memset(tmpAddr, 0, size);
+    // memset(tmpAddr, 0, size);
     rouTabList[1] = (rouTabList[1] + size) % QUEUESIZE;
 
     printf("释放旧连接\n");
