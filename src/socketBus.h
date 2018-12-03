@@ -12,7 +12,8 @@ public:
     int sendTo(const PacketBody& str, int connfd = -1); 
     int makeNewConn(const char* ip, int port);
     void inform(const char* ip, int port, int* tmp); 
-    void recvFrom(int* buf, int length);
+    void recvFrom(void* buf, int length);
+    static void readTime(int connfd);
     // void recvFrom(const char* ip, int port, int* buf, int length);
 };  
 

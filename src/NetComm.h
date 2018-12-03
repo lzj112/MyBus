@@ -14,6 +14,7 @@
 #include "Epoll.h"
 #include "BusInfo.h"
 #include "socketBus.h"
+#include "RouTabMgt.h"
 
 class NetComm 
 {
@@ -23,12 +24,12 @@ public:
     {}
 
     void initList(int proj_id);
-    int initShmList(int id);                              //初始化链表头结点
-    int initShmList(int id, int);
-    int updateList(int sockfd, const char* ip, int port);
+    // int initNetShmList(int id);                              //初始化链表头结点
+    int initProShmList(int id);
+    // int updateList(int sockfd, const char* ip, int port);
     int updateList(const struct ProComm& str);
     int creShmQueue(int proj_id);
-    int isThereConn(const char* ip, int port);
+    // int isThereConn(const char* ip, int port);
     int getProShmQueue(const char* ip, int port, int flag);
     void realseAll();
 
@@ -45,12 +46,14 @@ public:
     void forwarding(const Notice& str);
     void realseAll(NetComm* str);
 
-    Epoll myEpoll;
-    socketBus socketControl;    //socket TCP连接
 
 private:
+    Epoll myEpoll;
+    socketBus socketControl;    //socket TCP连接
     
-    int netList[3];             //路由表 RoutingTable
+    // int netList[3];             //路由表 RoutingTable
+    RouTabMgt netList;
+    
     int proList[3];             //进程通道proToNetQueue
 
     bool isRun;

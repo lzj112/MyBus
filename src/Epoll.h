@@ -31,22 +31,12 @@ public:
     
     int newConnect(int listenFd);
     
-    // std::vector<int> Wait();
-    // epoll_event* Wait(int& ret);
     void Wait(int& ret, epoll_event* events);
-    // std::vector<int> epollET(int epollFd, epoll_event* EVENTS, int ret);
-    
-    // void addToTimeWheel(int fd);
-    // void setTimer();
-    // int recvFrom(int fd, void* ptr, int n);
 
 private:
     int epollFd;            //epoll句柄
-    // epoll_event events[FDNUMBER];  //fd合集
     int listenFd;             //监听socketfd
     int udpfd;
-    // TimeWheel timeWheel;   //时间轮
-    // int timerFd;           //定时器fd
 }; 
 
 

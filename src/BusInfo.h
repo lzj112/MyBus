@@ -9,11 +9,14 @@
 #include <cstring>
 #include <sys/types.h>
 
+#include "Timer.h"
+
 #define READ 0
 #define WRITE 1
 #define READY 3
 #define PATH "/home/lzj/MyBus"
-#define QUEUESIZE 256
+// #define QUEUESIZE 256
+#define QUEUESIZE 11
 #define PacketBodyBufferSize 256
 
 /*
@@ -103,23 +106,19 @@ struct RoutingTable
 {
     char IP[10];
     int port;
+    bool isReadable;  //该端口号是否更新过,是否可用
     int sockfd;
-    int listLength;
-    int shmidNext;
 };
 
 //MyBus中转进程中存储的各进程与其共享内存通道的对应
 struct proToNetqueue 
 {   
-    // int shmSelfId;
     int offset;
     char sourceIP[10];  //本机中转进程ip por
     int sourcePort;         
     char destIP[10];    //对端中转进程ip port
     int destPort;
     int readQueue[3];
-    int listLength;
-    int shmidNext;
 };
 
 #endif

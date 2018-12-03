@@ -4,7 +4,6 @@
 #include <memory.h>
 
 #include "socketBus.h" 
-#include "AllocPort.h"
 
 void socketBus::startListening(const char* ip, int port) 
 {
@@ -37,18 +36,37 @@ int socketBus::sendTo(const char* ip, int port, Notice buffer)
 }
 
 
-//跨物理器发送数据
+//跨物理器发送数据 使用阻塞套接字
 int socketBus::sendTo(const PacketBody& str, int connfd) 
 {
 std::cout << "向另一个物理机转发=" << str.buffer << std::endl;
-    int res = send(connfd, (void *)&str, sizeof(str), 0);
+    int res;
+    do 
+    {
+        res = send(connfd, (void *)&str, sizeof(str), 0);
+        if (res == -1) 
+        {
+            if (errno == EINTR || errno == EWOULDBLOCK || errno == EAGAIN) 
+            {
+                continue;
+            }
+            else 
+            {
+                break;
+            }
+        }
+        else 
+        {
+            break;
+        }
+    } while (1);
     return res;
 }
 
 
 
 //接收收到跨物理机发送的消息后中转udp通知本进程
-void socketBus::recvFrom(int* buf, int length) 
+void socketBus::recvFrom(void* buf, int length) 
 {
     int udpfd = getMysockUDP(); 
 
@@ -57,6 +75,11 @@ void socketBus::recvFrom(int* buf, int length)
     perror("recvfrom ");
 }
 
+void socketBus::readTime(int connfd) 
+{
+    uint64_t exp;
+    read(connfd, &exp, sizeof(uint64_t));
+}
 
 int socketBus::makeNewConn(const char* destIP, int destPort) 
 {
@@ -67,8 +90,6 @@ int socketBus::makeNewConn(const char* destIP, int destPort)
         sockfd = socket(AF_INET, SOCK_STREAM, 0);
         assert(sockfd != -1);
         // setNonBlock(sockfd);
-
-        //保证给中转进程提供唯一端口号
         struct sockaddr_in addr;
         memset(&addr, 0, sizeof(addr));
         addr.sin_family = AF_INET;
