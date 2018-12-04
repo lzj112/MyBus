@@ -103,7 +103,7 @@ void NetComm::runMyEpoll()
                 }
                 else if (events[i].data.fd == proTimefd) 
                 {
-                    
+                    isProTimeOut = true;
                 }
                 else 
                 {

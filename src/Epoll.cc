@@ -49,7 +49,7 @@ int Epoll::newConnect(int listenFd) //好像在accept阻塞了 不是用的非�
     socklen_t cliLength = sizeof(client);
     //防止连接淤积
     while (1)
-   { 
+    { 
         memset(&client, 0, cliLength);   
         connfd = accept(listenFd, (sockaddr *)&client, &cliLength); //读取新连接
         if (connfd <= 0) 
@@ -72,46 +72,6 @@ int Epoll::newConnect(int listenFd) //好像在accept阻塞了 不是用的非�
     return 0;
 }
 
-/*
-std::vector<int> Epoll::epollET(int epollFd, epoll_event* events, int ret) 
-{
-    epoll_event events[FDNUMBER];
-    std::vector<int> tmp;
-    for (int i = 0; i < ret; i++)
-    {
-        if (events[i].events & EPOLLIN) //有EPOLLIN事件
-        {
-            if (events[i].data.fd == listenFd) //是新的连接请求
-            {
-                //循环读取防止多个连接到来
-                newConnect(listenFd);
-            }
-            else if (events[i].data.fd & EPOLLIN) //有数据可读
-            {
-                tmp.push_back(events[i].data.fd);
-                // timeWheel.adjust(events[i].data.fd);
-                // assignedTask(events[i].data.fd); //解析下载请求
-                
-            }
-            else if (events[i].data.fd == udpfd) 
-            {
-                
-            }
-        //     else    //定时器到期
-        //     {
-        //         uint64_t numExp;
-        //         ssize_t s = read(events[i].data.fd, &numExp, sizeof(uint64_t));
-        //         if (s == sizeof(uint64_t))
-        //         {
-        //             timeWheel.tick(); //指定定时任务
-        //         }
-        //     }
-        }
-    }
-    return tmp;
-}
-*/
-
 void Epoll::Wait(int& ret, epoll_event* events)
 {
     ret = epoll_wait(epollFd, events, FDNUMBER, 0); //执行一次非阻塞检测
@@ -120,11 +80,10 @@ void Epoll::Wait(int& ret, epoll_event* events)
         perror("epoll_wait has err ");
         exit(1);
     }    
-if (ret > 0) 
-{
-    std::cout << "epoll got somethings\n";
-}
-
+    if (ret > 0) 
+    {
+        std::cout << "epoll got somethings\n";
+    }
 }
 
 

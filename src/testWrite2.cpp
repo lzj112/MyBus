@@ -26,7 +26,6 @@ int destPort = 4099;
 
 int main() 
 {
-
     MyBus station;
     BusCard* cardPtr = station.initChannelControl(10); //创建共享内存控制块及通信队列
     station.prepareSocket(sourceIP, sourcePort);
