@@ -59,10 +59,11 @@
 为防止连接淤积采用循环读取
 
 ```
-	int connfd = -1;
+    int connfd = -1;
     struct sockaddr_in client;
     socklen_t cliLength = sizeof(client);
-	while (1)
+    //防止连接淤积
+    while (1)
     { 
         memset(&client, 0, cliLength);   
         connfd = accept(listenFd, (sockaddr *)&client, &cliLength); //读取新连接
@@ -76,6 +77,7 @@
             Add(connfd, EPOLLIN);       //将新的连接socketfd添加到合集
         }
     }
+    
 ```
 
 - ### 接收消息
