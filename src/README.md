@@ -53,6 +53,43 @@
 
 使用 `timerfd` 定时器并使用`epoll`监听, 进程通道表管理类和路由表管理类中都有定时器, 设置触发时间, 定期检查两个表有没有存满, 如果存储空间接近耗完, 就释放之前保存的
 
+```
+for (int i = 0; i < ret; i++) 
+        {
+            if (events[i].events & EPOLLIN) 
+            {
+                if (events[i].data.fd == udpfd) 
+                {
+                    //udp通知
+                }
+                else if (events[i].data.fd == tcpfd) 
+                {
+                    //新的连接
+                }
+                else if (events[i].data.fd == netTimefd) //定时事件先标记
+                {
+                    isNetTimeOut = true;
+                }
+                else if (events[i].data.fd == proTimefd) 
+                {
+                    isProTimeOut = true;
+                }
+                else 
+                {
+                    //tcp连接发来消息
+                }
+            }
+            if (isNetTimeOut) //最后处理定时任务,优先级不高
+            {
+                isNetTimeOut = false;
+            }
+            if (isProTimeOut) 
+            {
+                isProTimeOut = false;
+            }
+        }
+ ```
+
 
 - ### 接受新连接
 
