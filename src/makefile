@@ -1,23 +1,23 @@
 all : write1.out read.out  write2.out transit1.out transit2.out
 .PHONY : clean
 
-str = MyBus.cc socketBus.cc  socketTCP.cc -g -Wall
-ctr = NetComm.cc Epoll.cc socketBus.cc socketTCP.cc RouTabMgt.cc ProTabMgt.cc -g -Wall
+str = MyBus.cc socketBus.cc  socketTCP.cc 
+ctr = NetComm.cc Epoll.cc socketBus.cc socketTCP.cc RouTabMgt.cc ProTabMgt.cc 
 
-write1.out : MyBus.cc  socketBus.cc  socketTCP.cc  testWrite.cpp
-	g++ testWrite.cpp $(str) -o write1.out -lpthread
+write1.out : $(str)
+	g++ testWrite.cpp $(str) -o  write1.out -lpthread -g -Wall
 
-read.out : MyBus.cc socketBus.cc  socketTCP.cc testRead.cpp 
-	g++ testRead.cpp $(str) -o read.out -lpthread
+read.out : $(str)
+	g++ testRead.cpp $(str) -o read.out -lpthread -g -Wall
 
-write2.out : MyBus.cc  socketBus.cc  socketTCP.cc  testWrite2.cpp
-	g++ testWrite2.cpp $(str) -o write2.out -lpthread
+write2.out : $(str)
+	g++ testWrite2.cpp $(str) -o write2.out -lpthread -g -Wall
 
-transit1.out : NetComm.cc Epoll.cc socketBus.cc socketTCP.cc BusServer1.cpp RouTabMgt.cc ProTabMgt.cc
-	g++ BusServer1.cpp $(ctr) -o transit1.out -lpthread
+transit1.out : $(ctr)
+	g++ BusServer1.cpp $(ctr) -o transit1.out -lpthread -g -Wall
 
-transit2.out : NetComm.cc Epoll.cc socketBus.cc socketTCP.cc BusServer2.cpp RouTabMgt.cc ProTabMgt.cc
-	g++ BusServer2.cpp $(ctr) -o transit2.out -lpthread
+transit2.out : $(ctr)
+	g++ BusServer2.cpp $(ctr) -o transit2.out -lpthread -g -Wall
 	
 
 clean : 
