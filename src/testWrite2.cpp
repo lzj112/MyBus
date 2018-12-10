@@ -8,39 +8,22 @@
 
 using namespace std;
 
-//本机IP 端口
-const char* sourceIP = "127.0.0.1";
-int sourcePort = 5000;
-
-//本机中转进程IP 端口
-const char* passIP = "127.0.0.1";
-int passPort = 4096;
-
-//对端中转进程ip 端口
-const char* destPassIP = "127.0.0.1";
-int destPassPort = 4097;
-
-//目标进程ip 端口
-const char* destIP = "127.0.0.1";
-int destPort = 4099;
 
 int main() 
 {
     MyBus station;
     BusCard* cardPtr = station.initChannelControl(10); //创建共享内存控制块及通信队列
-    station.prepareSocket(sourceIP, sourcePort);
+    station.prepareSocket("write2.json");
     
     const char p[] = "i`m the another one !!!!!!!!!!!!!";
     int length = strlen(p) + 1;
 
     //跨物理机发送
     printf("发向另一个物理机送%s\n", p);
-    ProComm tmp(sourceIP, sourcePort, passIP, passPort, destIP, 
-                destPort, destPassIP, destPassPort);
 
     // while (1)
     // {
-        station.sendByNetwork(cardPtr, tmp, p, length);
+        station.sendByNetwork(cardPtr, "write2.json", p, length);
     //     sleep(1);
     // }
 

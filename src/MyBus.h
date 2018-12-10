@@ -9,16 +9,17 @@
 #include <thread>
 
 #include "BusInfo.h"
+#include "Parsing.h"
 #include "socketBus.h"
-// #include "NetComm.h"
+#include "Parsing.h"
 
-///
+
 /* 
 进程间通信组件
 */
 class MyBus
 {
-  public:
+public:
     MyBus();
     ~MyBus();
     
@@ -29,20 +30,19 @@ class MyBus
 
     int initShmQueue(BusCard* card);                         //初始化共享内存的队列
     void* getLocalQueue(BusCard* cardPtr, int flag);       //获得创建的队列的地址,flag指定读写队列
-    void prepareSocket(const char* ip, int port);
+    void prepareSocket(const char* fileName);
 
     int addQueueFront(BusCard* cardPtr, int flag);
     int addQueueRear(BusCard* CardPtr, int flag);
 
-    char* getLocalIP();
     int sendToLocal(BusCard* cardPtr, const char* buffer, int length);    //收发数据
     int recvFromLocal(BusCard* cardPtr, char* buffer, int length);
-    void sendByNetwork(BusCard* card, const struct ProComm& str, const char* buffer, int length);
+    void sendByNetwork(BusCard* card, const char* fileName, const char* buffer, int length);
     int recvFromNetwork(/*const char* ip, int port,*/char* buffer);  //////
     void saveLocalMessage(BusCard* card, const char* buffer);
     void release(int shmid);
     void releaseAll(BusCard* card);
-  private:
+private:
     void getPath(char *buffer, size_t size);                //使用ftok创建key
     int getQueueFront(BusCard* cardPtr, int flag);           //队列操作
     int getQueueRear(BusCard* cardPtr, int flag);

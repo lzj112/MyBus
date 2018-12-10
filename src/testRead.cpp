@@ -10,29 +10,12 @@
 
 using namespace std;
 
-//本机IP 端口
-const char* sourceIP = "127.0.0.1";
-int sourcePort = 4099;
-
-//本机中转进程IP 端口
-const char* passIP = "127.0.0.1";
-int passPort = 4097;
-
-//对端中转进程ip 端口
-const char* destPassIP = "127.0.0.1";
-int destPassPort = 4096;
-
-//目标进程ip 端口
-const char* destIP = "127.0.0.1";
-int destPort = 4098;
-////dasdfasd
-
 int shmid = 5275659;
 int main() 
 {
     MyBus station;
     BusCard* cardPtr = station.getChannelControl(shmid);
-    station.prepareSocket(sourceIP, sourcePort);
+    station.prepareSocket("rear1.json");
     
     char p[256];
     
@@ -43,7 +26,6 @@ int main()
         cout << p << endl;
         memset(p, 0, sizeof(p));
     }
-    // station.recvFromNetwork(sourceIP, sourcePort, p);
 
    /* 
     while (1)

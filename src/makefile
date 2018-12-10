@@ -1,7 +1,7 @@
 all : write1.out read.out  write2.out transit1.out transit2.out
 .PHONY : clean
 
-str = MyBus.cc socketBus.cc  socketTCP.cc 
+str = MyBus.cc socketBus.cc  socketTCP.cc Parsing.cc cJSON.c
 ctr = NetComm.cc Epoll.cc socketBus.cc socketTCP.cc RouTabMgt.cc ProTabMgt.cc 
 
 write1.out : $(str)

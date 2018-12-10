@@ -162,7 +162,7 @@ void ProTabMgt::reOrder()
 {
     std::lock_guard<std::mutex> locker(myLock);
    
-    proToNetqueue* tmpAddr = static_cast<proToNetqueue *> (shmat(proTabList[0], nullptr, 0)) + proTabList[1];
+    // proToNetqueue* tmpAddr = static_cast<proToNetqueue *> (shmat(proTabList[0], nullptr, 0)) + proTabList[1];
     int front = proTabList[1];
     int rear = proTabList[2];
     int size = ((rear - front + QUEUESIZE) % QUEUESIZE) / 2;

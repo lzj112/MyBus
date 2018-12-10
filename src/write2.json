@@ -1,0 +1,14 @@
+{
+
+    "sourceIP" : "127.0.0.1",
+    "sourcePort" : 5000,
+
+    "passIP" : "127.0.0.1",
+    "passPort" : 4096,
+    
+    "destPassIP" : "127.0.0.1",
+    "destPassPort" : 4097,
+    
+    "destIP" : "127.0.0.1",
+    "destPort" : 4099
+}

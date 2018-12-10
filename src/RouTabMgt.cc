@@ -142,7 +142,7 @@ void RouTabMgt::reOrder()
     
     std::lock_guard<std::mutex> locker(myLock);
    
-    RoutingTable* tmpAddr = static_cast<RoutingTable *> (shmat(rouTabList[0], nullptr, 0)) + rouTabList[1];
+    // RoutingTable* tmpAddr = static_cast<RoutingTable *> (shmat(rouTabList[0], nullptr, 0)) + rouTabList[1];
     int front = rouTabList[1];
     int rear = rouTabList[2];
     int size = ((rear - front + QUEUESIZE) % QUEUESIZE) / 2;

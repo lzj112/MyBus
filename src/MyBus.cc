@@ -150,12 +150,13 @@ void* MyBus::getLocalQueue(BusCard* cardPtr, int flag) //flag=0期望读队列,=
     return shmat(shmid, nullptr, 0);
 }
 
-
-void MyBus::prepareSocket(const char* ip, int port) 
+void MyBus::prepareSocket(const char* fileName) 
 {
+    Parsing tmp;
+    tmp.getConfigFile(fileName);
     socketControl.initSocketTCP();
     socketControl.initSocketUDP();
-    socketControl.startListening(ip, port);
+    socketControl.startListening(tmp.getSourceIP(), tmp.getSourcePort());
 }
 
 int MyBus::getQueueFront(BusCard* cardPtr, int flag) 
@@ -336,20 +337,28 @@ void MyBus::saveLocalMessage(BusCard* card, const char* buffer)
 }
 
 
-void MyBus::sendByNetwork(BusCard* card, const ProComm& str, const char* buffer, int length)
+void MyBus::sendByNetwork(BusCard* card, const char* fileName, const char* buffer, int length) 
 {
-    //存储进共享内存发送缓冲区
-    saveLocalMessage(card, buffer);
+    Parsing connInfo;
+    connInfo.getConfigFile(fileName);
 
     Notice tmp;
     tmp.head.type = READY;
-    tmp.netQueaad = str;
+    tmp.netQueaad.sourcePort = connInfo.getSourcePort();
+    tmp.netQueaad.sourcePassPort = connInfo.getSourcePassPort();
+    tmp.netQueaad.destPassPort = connInfo.getDestPassPort();
+    tmp.netQueaad.destPort = connInfo.getDestPort();
+    strcpy(tmp.netQueaad.sourceIP, connInfo.getSourceIP());
+    strcpy(tmp.netQueaad.sourcePassIP, connInfo.getSourcePassIP());
+    strcpy(tmp.netQueaad.destPassIP, connInfo.getdestPassIP());
+    strcpy(tmp.netQueaad.destIP, connInfo.getdestIP());
     tmp.shmid = card->shmSelfId;
     tmp.head.bodySzie = length;
 
-    //向中转进程发送通知
-    socketControl.sendTo(str.sourcePassIP, str.sourcePassPort, tmp);
-
+    //存储进共享内存发送缓冲区
+    saveLocalMessage(card, buffer);
+    // 向中转进程发送通知
+    socketControl.sendTo(tmp.netQueaad.sourcePassIP, tmp.netQueaad.sourcePassPort, tmp);
 }
 
 
