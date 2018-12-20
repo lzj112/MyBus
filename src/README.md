@@ -23,6 +23,7 @@
 | socketTCP.h  | 封装 socket API  |
 | socketBus.h |  继承自 socketTCP, 处理数据的接收和发送	|
 | Parsing.h     | 解析配置文件        |
+| demo          | 测试用例  |
 
 ## 项目流程
 
