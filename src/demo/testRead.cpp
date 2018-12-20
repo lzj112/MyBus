@@ -15,7 +15,7 @@ int main()
 {
     MyBus station;
     BusCard* cardPtr = station.getChannelControl(shmid);
-    station.prepareSocket("rear1.json");
+    station.prepareSocket("read1.json");
     
     char p[256];
     
