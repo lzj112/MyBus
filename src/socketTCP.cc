@@ -59,7 +59,7 @@ int socketTCP::Bind(const char* ip, int port)
     {
         perror("bind fdtcp");
     }
-
+ 
     res = bind(fdUDP, (struct sockaddr*)&addr, sizeof(addr));
     if (res == -1) 
     {
