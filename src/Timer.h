@@ -37,7 +37,7 @@ public:
             std::cout << "timerfd_create is wrong " << std::endl;
         }
 
-        res = timerfd_settime(clock, TFD_TIMER_ABSTIME, &new_value, nullptr); //启动定时器
+        res = timerfd_settime(clock, 0, &new_value, nullptr); //启动定时器
         if (res == -1) 
         {
             std::cout << "timer_settime is wrong" << std::endl;
