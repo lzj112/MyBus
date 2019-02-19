@@ -47,35 +47,6 @@ public:
     int destPassPort;
     ProComm(){
     }
-    // ProComm(const char* sourceIP, int sourcePort, const char* passIP, int passPort,
-    //         const char* destIP, int destPort, const char* destPassIP, int destPassPort)
-    // {
-    //     strcpy(this->destIP, destIP);
-    //     strcpy(this->sourceIP, sourceIP);
-    //     strcpy(this->sourcePassIP, passIP);
-    //     strcpy(this->destPassIP, destPassIP);
-    //     this->destPort = destPort;
-    //     this->sourcePort = sourcePort;
-    //     this->sourcePassPort = passPort;
-    //     this->destPassPort = destPassPort;
-    // }
-    // ProComm& operator= (const ProComm& str) 
-    // {
-    //     if (&str == this) 
-    //     {
-    //         return *this;
-    //     }
-    //     destPort = str.destPort;
-    //     sourcePort = str.sourcePort;
-    //     destPassPort = str.destPassPort;
-    //     sourcePassPort = str.sourcePassPort;
-    //     strcpy(destIP, str.destIP);
-    //     strcpy(sourceIP, str.sourceIP);
-    //     strcpy(destPassIP, str.destPassIP);
-    //     strcpy(sourcePassIP, str.sourcePassIP);
-
-    //     return *this;
-    // }
 };
 
 //进程间通信的结构

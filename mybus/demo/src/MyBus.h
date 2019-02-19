@@ -49,7 +49,7 @@ private:
     int getQueueRear(BusCard* cardPtr, int flag);
 
     std::mutex my_lock;
-    
+     
     // BusCard* card_;
     socketBus socketControl;
 };

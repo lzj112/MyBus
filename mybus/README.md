@@ -1,15 +1,55 @@
 # 基于共享内存的进程间通信 MyBus
-
+@[toc]
 ---
 
 ## 项目功能
 
-- 实现本机和跨主机间的进程间通信
+- 提供本机和跨主机间的进程间通信接口, 屏蔽通信细节
 
 ## 项目大概思路
 
 每一个主机上运行有一个中转进程, 本机进程间通信直接写入共享内存, 跨主机的进程间通信, 先写入共享内存, 再通知本机中转进程, 中转进程将数据发往目标进程所在主机上的中转进程, 对端中转进程收到数据后写入共享内存再通知目标进程读取
 
+## 使用步骤
+
+创建 MyBus 中转进程 `transitServer`
+
+```
+const char* ip = "127.0.0.1";
+int port = 4096;
+
+int main() 
+{
+    NetComm plane;
+
+    plane.initList(1);
+    plane.prepareSocket(ip, port);
+    plane.runMyEpoll();
+
+}
+```
+1. 跨机之间进程通信
+
+- 初始化共享内存通道, 解析配置文件
+
+```
+MyBus station;
+    BusCard* cardPtr = station.initChannelControl(10); //创建共享内存控制块及通信队列
+    station.prepareSocket("write1.json");
+```
+- 调用`MyBus::sendByNetwork`向对端发送消息
+
+- 对端进程初始化共享内存后调用`MyBus::recvFromNetwork`接收数据
+
+2. 本机间进程通信
+分别调用`MyBus::sendToLocal` 以及 `MyBus::recvFromLocal` 发送和接收消息
+
+3. 使用截图
+![在这里插入图片描述](https://img-blog.csdnimg.cn/201902191734458.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl8zNjg4ODU3Nw==,size_16,color_FFFFFF,t_70)
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20190219173501493.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl8zNjg4ODU3Nw==,size_16,color_FFFFFF,t_70)
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20190219173518288.png)
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20190219173559794.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl8zNjg4ODU3Nw==,size_16,color_FFFFFF,t_70)
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20190219173539101.png)
 ## 头文件功能描述
 
 |  头文件 | 功能  |
@@ -25,7 +65,7 @@
 | Parsing.h     | 解析配置文件        |
 | demo          | 测试用例  |
 
-## 项目流程
+## 项目流程及技术概述
 
 - 首先通过 `BusCard* MyBus::initChannelControl()`初始化获得`MyBus`控制块`BusCard`
 
@@ -48,8 +88,8 @@
 - ### 进程通道表和路由表
 
 这两个表都是中转进程的 
-1. 进程通道表存储上述的数据来源的进程 A 和目标进程 D 的对应关系,  区别不同通信双方的数据缓冲区
-2. 路由表存储发来数据的中转进程的 IP 和 port, 在发现本机进程期望发向这个进程时, 不用建立新的`TCP`连接, 而是可以使用已有的连接
+1. 进程通道表存储着跨机进程通信时, 本机进程 A 和对端进程 B C...的对应通道, 是一个环形队列 
+2. 路由表存储发来数据的不同中转进程的 IP 和 port, 在发现本机进程期望发向某个进程时, 先搜索路由表, 在有连接的情况下不用建立新的`TCP`连接, 而是可以使用已有的连接
 
 - ### 定时器处理
 
@@ -198,7 +238,5 @@ int socketBus::makeNewConn(const char* destIP, int destPort)
 2. 因为`BusCard` 存储在共享内存中, 我假设的是本机间通信双方都知道共享内存 ID, 这块可能可以也改成使用配置文件好一点把, 如果是跨主机通信, 会使用`UDP`告知中转进程存放数据的共享内存 ID (以及中转进程收到数据后告知目标进程数据存放地点的共享内存 ID), 
 3. 定时器到期如果存储空间满了我选择的简单的前移头指针, 控制访问到的位置来扩大存储区域, 但是这样一个是之前存储的也有可能是在频繁使用的一个连接或者进程通道, 最近存储的反而是不用的废弃连接和进程通道, 如果要改进的话, 考虑时间轮, 让他们以活跃程度排序
 4. C++使用上的不足, 面向对象的特性把握的还是不够, 在对对象的封装上还有很多不合理之处, 比如`epoll`的封装
-> 建议阅读未来知名业界大佬[娄神](https://github.com/hepangda)的代码以学习
 
 寒假有空了再重新修缮一下这个项目吧
-
