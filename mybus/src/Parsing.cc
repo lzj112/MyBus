@@ -42,10 +42,6 @@ void Parsing::getConfigFile(const char* fileName)
     addDestPass(root);
     addDest(root);
     
-    for (auto x : addr) 
-    {
-        printf("ip%s port%d\n", x.first, x.second);
-    }
 
     int res = munmap(mapping, s.st_size);
     assert(res != -1);

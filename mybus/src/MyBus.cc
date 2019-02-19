@@ -62,9 +62,11 @@ BusCard* MyBus::initChannelControl(int proj_id)
         shmid = shmget(key, 0, 0);
         if (shmid != -1) 
         {
-            std::cout << "shmid == " << shmid << std::endl;
+            std::cout << "创建共享内存,shmid == " << shmid << std::endl;
         }
     }
+    else 
+        std::cout << "创建共享内存,ID == " << shmid << std::endl;
 
     //挂载到当前进程
     BusCard* cardPtr = static_cast<BusCard *> (shmat(shmid, nullptr, 0));
@@ -288,6 +290,8 @@ int MyBus::sendToLocal(BusCard* cardPtr, const char* buffer, int length)
 
 int MyBus::recvFromLocal(BusCard* cardPtr, char* buffer, int length) 
 {
+    if (cardPtr == nullptr)
+        return -1;
     int queueFront, queueRear;
     {   
         //获得写队列头尾指针

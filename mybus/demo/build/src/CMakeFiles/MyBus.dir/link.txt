@@ -1,0 +1,2 @@
+/usr/bin/ar qc libMyBus.a  CMakeFiles/MyBus.dir/Epoll.cc.o CMakeFiles/MyBus.dir/MyBus.cc.o CMakeFiles/MyBus.dir/NetComm.cc.o CMakeFiles/MyBus.dir/Parsing.cc.o CMakeFiles/MyBus.dir/ProTabMgt.cc.o CMakeFiles/MyBus.dir/RouTabMgt.cc.o CMakeFiles/MyBus.dir/cJSON.c.o CMakeFiles/MyBus.dir/socketBus.cc.o CMakeFiles/MyBus.dir/socketTCP.cc.o
+/usr/bin/ranlib libMyBus.a

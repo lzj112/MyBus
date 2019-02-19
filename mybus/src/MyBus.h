@@ -26,6 +26,7 @@ public:
     key_t getKey(int proj_id, char* in_case_path = nullptr); //获得shmget的key
     BusCard* initChannelControl(int proj_id);                  //初始化控制块信息,以及两个队列
     BusCard* getChannelControl(int shmid);                   //获得一个创建好的控制块信息
+
     int initProChannelNode(const BusCard* card, const char* ip, int port);
 
     int initShmQueue(BusCard* card);                         //初始化共享内存的队列
@@ -49,6 +50,7 @@ private:
 
     std::mutex my_lock;
     
+    // BusCard* card_;
     socketBus socketControl;
 };
 

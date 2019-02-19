@@ -1,0 +1,1 @@
+/usr/bin/c++    -rdynamic CMakeFiles/write2.dir/testWrite2.cpp.o  -o write2 src/libMyBus.a -lpthread 

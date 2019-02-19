@@ -1,0 +1,1 @@
+/usr/bin/c++    -rdynamic CMakeFiles/transit1.dir/BusServer1.cpp.o  -o transit1 src/libMyBus.a -lpthread 

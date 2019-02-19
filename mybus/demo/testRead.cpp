@@ -6,11 +6,11 @@
 
 #include <iostream>
 
-#include "MyBus.h" 
+#include "src/MyBus.h" 
 
 using namespace std;
 
-int shmid = 5275659;
+int shmid = 2981904;
 int main() 
 {
     MyBus station;
@@ -19,26 +19,21 @@ int main()
     
     char p[256];
     
-    //跨物理机发送
-    while (1) 
-    {
-        station.recvFromNetwork(p);
-        cout << p << endl;
-        memset(p, 0, sizeof(p));
-    }
+    // while (1) 
+    // {
+    //     station.recvFromNetwork(p);
+    //     cout << p << endl;
+    //     memset(p, 0, sizeof(p));
+    // }
 
-   /* 
+   
     while (1)
     {
         station.recvFromLocal(cardPtr, p, 256);
-        // if (strlen(p) == 0) 
-        // {
-        //     break;
-        // }
         cout << "here is message from local:\n [" << p << "]" << endl;
         memset(p, '\0', sizeof(p));
         sleep(1);
     }
-    */
+    
 //    station.releaseAll(cardPtr);
 }

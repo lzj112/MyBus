@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "NetComm.h"
+#include "src/NetComm.h"
 
 using namespace std;
 

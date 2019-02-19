@@ -1,6 +1,7 @@
 #include <iostream>
 
-#include "NetComm.h"
+#include "src/MyBus.h"
+#include "src/NetComm.h"
 
 using namespace std;
 
@@ -15,5 +16,4 @@ int main()
     plane.prepareSocket(ip, port);
     plane.runMyEpoll();
 
-    
 }
