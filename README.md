@@ -1,6 +1,6 @@
+
+
 # 基于共享内存的进程间通信 MyBus
-@[toc]
----
 
 ## 项目功能
 
@@ -44,12 +44,15 @@ MyBus station;
 2. 本机间进程通信
 分别调用`MyBus::sendToLocal` 以及 `MyBus::recvFromLocal` 发送和接收消息
 
+
 3. 使用截图
+
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/201902191734458.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl8zNjg4ODU3Nw==,size_16,color_FFFFFF,t_70)
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/20190219173501493.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl8zNjg4ODU3Nw==,size_16,color_FFFFFF,t_70)
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/20190219173518288.png)
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/20190219173559794.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl8zNjg4ODU3Nw==,size_16,color_FFFFFF,t_70)
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/20190219173539101.png)
+
 ## 头文件功能描述
 
 |  头文件 | 功能  |
