@@ -16,13 +16,12 @@
 #define READY 3
 #define PATH "/home/lzj/MyBus"
 #define QUEUESIZE 256
-// #define QUEUESIZE 11
 #define PacketBodyBufferSize 256
 
 /*
-    [0][0]存储读取队列id,[0][1]存储发送队列id,[0][2]存储当前进程id
-    通信对端进程发现存储的进程id不是本进程id,那么对应的读写队列就是它的写读队列
-    [1][0],[1][1],[2][0],[2][1]存储两个队列的头尾指针
+[0][0]存储读取队列id,[0][1]存储发送队列id,[0][2]存储当前进程id
+通信对端进程发现存储的进程id不是本进程id,那么对应的读写队列就是它的写读队列
+[1][0],[1][1],[2][0],[2][1]存储两个队列的头尾指针
 */
 struct BusCard
 {
@@ -47,35 +46,7 @@ public:
     int destPassPort;
     ProComm(){
     }
-    // ProComm(const char* sourceIP, int sourcePort, const char* passIP, int passPort,
-    //         const char* destIP, int destPort, const char* destPassIP, int destPassPort)
-    // {
-    //     strcpy(this->destIP, destIP);
-    //     strcpy(this->sourceIP, sourceIP);
-    //     strcpy(this->sourcePassIP, passIP);
-    //     strcpy(this->destPassIP, destPassIP);
-    //     this->destPort = destPort;
-    //     this->sourcePort = sourcePort;
-    //     this->sourcePassPort = passPort;
-    //     this->destPassPort = destPassPort;
-    // }
-    // ProComm& operator= (const ProComm& str) 
-    // {
-    //     if (&str == this) 
-    //     {
-    //         return *this;
-    //     }
-    //     destPort = str.destPort;
-    //     sourcePort = str.sourcePort;
-    //     destPassPort = str.destPassPort;
-    //     sourcePassPort = str.sourcePassPort;
-    //     strcpy(destIP, str.destIP);
-    //     strcpy(sourceIP, str.sourceIP);
-    //     strcpy(destPassIP, str.destPassIP);
-    //     strcpy(sourcePassIP, str.sourcePassIP);
-
-    //     return *this;
-    // }
+    
 };
 
 //进程间通信的结构
